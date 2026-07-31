@@ -7,8 +7,10 @@ import { useReveal } from "@/hooks/use-reveal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "EL Project — Jasa Pembuatan Aplikasi Mobile, Web & iOS" },
-      { name: "description", content: "Studio digital profesional untuk pembuatan aplikasi mobile, web apps, iOS, dan website premium." },
+      { title: "ELPROJECT — Software House & Studio Digital Profesional" },
+      { name: "description", content: "Jasa pembuatan aplikasi mobile (Android/iOS), web apps, dan sistem IT custom kelas dunia untuk skala bisnis modern Anda." },
+      { property: "og:image", content: "https://elproject-web.vercel.app/slide-1.png" },
+      { name: "twitter:image", content: "https://elproject-web.vercel.app/slide-1.png" },
     ],
   }),
   component: Index,

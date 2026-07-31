@@ -83,7 +83,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "EL Project — Pro App Development" },
       { property: "og:description", content: "Wujudkan aplikasi impian Anda — mobile, web, iOS, dan website kelas dunia." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://elproject-web.vercel.app/slide-1.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://elproject-web.vercel.app/slide-1.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
