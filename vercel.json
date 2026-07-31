@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter tanstack_start_ts build",
-  "outputDirectory": ".output/public",
+  "buildCommand": "cd ../.. && pnpm --filter tanstack_start_ts build",
+  "outputDirectory": ".vercel/output",
   "framework": null
 }
