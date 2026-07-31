@@ -1,9 +1,10 @@
 {
-  "installCommand": "npm install",
+  "installCommand": "npm install --include=dev",
   "buildCommand": "npm run build",
   "outputDirectory": ".vercel/output",
   "framework": null,
   "env": {
+    "NODE_ENV": "development",
     "NODE_OPTIONS": "--max-old-space-size=3072"
   }
 }
