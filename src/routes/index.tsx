@@ -447,11 +447,12 @@ function Index() {
           </div>
           <div
             ref={pricingScrollRef}
-            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-4 -mt-4 touch-pan-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-4 -mt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ touchAction: 'pan-y pinch-zoom' }}
             onMouseEnter={() => isSliderPaused.current = true}
             onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchStart={() => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
-            onTouchMove={() => lastInteractionTime.current = Date.now()}
+            onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
+            onTouchMove={(e) => lastInteractionTime.current = Date.now()}
             onTouchEnd={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
             onTouchCancel={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
           >
@@ -488,11 +489,12 @@ function Index() {
           </div>
           <div
             ref={testimonialScrollRef}
-            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 touch-pan-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ touchAction: 'pan-y pinch-zoom' }}
             onMouseEnter={() => isSliderPaused.current = true}
             onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchStart={() => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
-            onTouchMove={() => lastInteractionTime.current = Date.now()}
+            onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
+            onTouchMove={(e) => lastInteractionTime.current = Date.now()}
             onTouchEnd={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
             onTouchCancel={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
           >
