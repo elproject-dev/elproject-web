@@ -18,14 +18,8 @@ export default defineConfig({
   },
   tanstackStart: {
     server: { entry: "server" },
-    ssr: false,
   },
   nitro: {
-    preset: "github-pages",
-    // @ts-expect-error - 'prerender' is not in Lovable's nitro types but is valid for Nitro itself.
-    prerender: {
-      routes: ["/", "/showcase", "/live-demo"],
-      crawlLinks: true,
-    },
+    preset: "vercel",
   },
 });
