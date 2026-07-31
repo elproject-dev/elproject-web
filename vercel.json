@@ -1,6 +1,10 @@
 {
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile --filter tanstack_start_ts...",
-  "buildCommand": "cd ../.. && pnpm --filter tanstack_start_ts build",
+  "buildCommand": "cd ../.. && NODE_OPTIONS='--max-old-space-size=3072' pnpm --filter tanstack_start_ts build",
   "outputDirectory": ".vercel/output",
-  "framework": null
+  "framework": null,
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=3072"
+  }
 }
+
