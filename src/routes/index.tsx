@@ -448,7 +448,6 @@ function Index() {
           <div
             ref={pricingScrollRef}
             className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-4 -mt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            style={{ touchAction: 'pan-y pinch-zoom' }}
             onMouseEnter={() => isSliderPaused.current = true}
             onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
             onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
@@ -490,7 +489,6 @@ function Index() {
           <div
             ref={testimonialScrollRef}
             className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            style={{ touchAction: 'pan-y pinch-zoom' }}
             onMouseEnter={() => isSliderPaused.current = true}
             onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
             onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
