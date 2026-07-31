@@ -1,11 +1,12 @@
 {
-  "installCommand": "npm install --include=dev",
+  "installCommand": "npm install --include=dev --legacy-peer-deps",
   "buildCommand": "npm run build",
   "outputDirectory": ".vercel/output",
   "framework": null,
   "env": {
-    "NODE_ENV": "development",
-    "NODE_OPTIONS": "--max-old-space-size=3072"
+    "NODE_ENV": "production",
+    "NODE_OPTIONS": "--max-old-space-size=3072",
+    "npm_config_include": "dev"
   }
 }
 
