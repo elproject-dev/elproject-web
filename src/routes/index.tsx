@@ -9,8 +9,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "ELPROJECT — Software House & Studio Digital Profesional" },
       { name: "description", content: "Jasa pembuatan aplikasi mobile (Android/iOS), web apps, dan sistem IT custom kelas dunia untuk skala bisnis modern Anda." },
-      { property: "og:image", content: "https://elproject-web.vercel.app/slide-1.png" },
-      { name: "twitter:image", content: "https://elproject-web.vercel.app/slide-1.png" },
+      { property: "og:image", content: "https://www.elproject.studio/slide-1.png" },
+      { name: "twitter:image", content: "https://www.elproject.studio/slide-1.png" },
     ],
   }),
   component: Index,
