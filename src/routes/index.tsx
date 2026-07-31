@@ -474,7 +474,7 @@ function Index() {
                     </li>
                   ))}
                 </ul>
-                <a href={`https://wa.me/6283867180887?text=halo,saya%20tertarik%20ingin%20membuat%20aplikasi%0Apaket%20yg%20saya%20butuhkan%20adalah%20paket%20${p.name.toLowerCase()}%0A%0Asaya%20tertarik%20setelah%20melihat%20web%20ini%0A%0A%0Ahttps://elproject.studio`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center mt-auto">Pilih Paket</a>
+                <a href={`https://wa.me/6283867180887?text=halo,saya%20tertarik%20ingin%20membuat%20aplikasi%0Apaket%20yg%20saya%20butuhkan%20adalah%20paket%20${p.name.toLowerCase()}%0A%0Asaya%20tertarik%20setelah%20melihat%20web%20ini%0A%0A%0Ahttps://www.elproject.studio`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center mt-auto">Pilih Paket</a>
               </div>
             ))}
           </div>
