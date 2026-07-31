@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "EL Project — Jasa Pembuatan Aplikasi Mobile, Web & iOS" },
       { name: "description", content: "Studio digital pro untuk pembuatan aplikasi mobile, web apps, iOS, dan website modern dengan desain premium." },
       { property: "og:title", content: "EL Project — Pro App Development" },
-      { property: "og:description", content: "Wujudkan aplikasi impian Anda — mobile, web, iOS, dan website kelas dunia." },
+      { property: "og:description", content: "Wujudkan aplikasi untuk bisnis Anda — mobile, web, iOS, dan website kelas dunia." },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://www.elproject.studio/slide-1.png" },
       { name: "twitter:card", content: "summary_large_image" },
