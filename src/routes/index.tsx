@@ -567,10 +567,10 @@ function Index() {
                       <Star key={`star-${i}-${j}`} className={`w-4 h-4 ${j < (t.rating || 5) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}`} />
                     ))}
                   </div>
-                  <p className="text-base md:text-lg text-foreground/90 mb-6 flex-grow">{t.text}</p>
+                  <p className="text-xs md:text-sm text-foreground/90 mb-6 flex-grow">{t.text}</p>
                   <div className="mt-auto">
-                    <div className="text-lg md:text-xl font-semibold">{t.name}</div>
-                    <div className="text-base md:text-lg text-muted-foreground">{t.role}</div>
+                    <div className="text-sm md:text-base font-semibold">{t.name}</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">{t.role}</div>
                   </div>
                 </div>
               );

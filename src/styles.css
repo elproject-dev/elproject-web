@@ -211,7 +211,7 @@
 }
 
 .glass-card {
-  background: var(--gradient-card);
+  background: var(--card);
   backdrop-filter: blur(16px);
   border: 1px solid oklch(1 0 0 / 0.08);
   box-shadow: var(--shadow-card);
