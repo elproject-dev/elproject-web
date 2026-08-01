@@ -6,20 +6,36 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig({
-  vite: {
-    base: "/",
-    server: {
-      allowedHosts: [
-        "directed-zigzagged-haunt.ngrok-free.dev",
-        ".ngrok-free.dev"
-      ],
+export default async (env: any) => {
+  const configFn = defineConfig({
+    vite: {
+      base: "/",
+      server: {
+        allowedHosts: [
+          "directed-zigzagged-haunt.ngrok-free.dev",
+          ".ngrok-free.dev"
+        ],
+      },
+      resolve: {
+        tsconfigPaths: true,
+      },
     },
-  },
-  tanstackStart: {
-    server: { entry: "server" },
-  },
-  nitro: {
-    preset: "vercel",
-  },
-});
+    tanstackStart: {
+      server: { entry: "server" },
+    },
+    nitro: {
+      preset: "vercel",
+    },
+  });
+
+  const config = await configFn(env);
+  
+  // Filter out the vite-tsconfig-paths plugin since Vite supports it natively now
+  if (config.plugins) {
+    config.plugins = config.plugins.filter(
+      (p: any) => p && p.name !== "vite-tsconfig-paths"
+    );
+  }
+
+  return config;
+};

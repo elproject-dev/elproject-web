@@ -160,39 +160,90 @@ function Index() {
 
   const slides = ["/slide-1.png", "/slide-2.png", "/slide-3.png", "/slide-4.png"];
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentTesti, setCurrentTesti] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const testimonialScrollRef = useRef<HTMLDivElement>(null);
   const pricingScrollRef = useRef<HTMLDivElement>(null);
-  const isSliderPaused = useRef(false);
-  const lastInteractionTime = useRef(0);
+
+  const isPricingPaused = useRef(false);
+  const lastPricingInteraction = useRef(0);
+
+  const isTestimonialPaused = useRef(false);
+  const lastTestimonialInteraction = useRef(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 4000);
-    return () => clearInterval(timer);
+    const timerTesti = setInterval(() => {
+      if (!isTestimonialPaused.current) {
+        setCurrentTesti((prev) => (prev + 1) % testimonials.length);
+      }
+    }, 4000);
+    return () => {
+      clearInterval(timer);
+      clearInterval(timerTesti);
+    };
   }, []);
 
   useEffect(() => {
-    const slide = (ref: React.RefObject<HTMLDivElement | null>) => {
-      if (isSliderPaused.current || Date.now() - lastInteractionTime.current < 4000) return;
+    const slide = (
+      ref: React.RefObject<HTMLDivElement | null>,
+      isPaused: React.MutableRefObject<boolean>,
+      lastInteraction: React.MutableRefObject<number>,
+      disableOnDesktop: boolean = false,
+      originalCount: number = 0
+    ) => {
+      const isDesktop = window.innerWidth >= 768;
+      if (disableOnDesktop && isDesktop) return;
+      if (isPaused.current || Date.now() - lastInteraction.current < 4000) return;
       if (ref.current) {
         const { scrollLeft, scrollWidth, clientWidth, children } = ref.current;
         const scrollAmount = children[0] ? children[0].clientWidth + 24 : clientWidth * 0.85;
+
+        if (originalCount > 0) {
+          const originalWidth = scrollAmount * originalCount;
+
+          if (scrollLeft >= originalWidth - 5) {
+            // Jika sudah terlewat (misal karena user scroll manual), reset instan dulu
+            ref.current.style.scrollSnapType = 'none';
+            ref.current.scrollLeft -= originalWidth;
+            void ref.current.offsetWidth; // force repaint
+            ref.current.style.scrollSnapType = '';
+            ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          } else {
+            // Scroll normal
+            ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+            // Jika setelah scroll ini posisi akan mencapai atau melewati batas akhir original..
+            if (scrollLeft + scrollAmount >= originalWidth - 5) {
+              // Tunggu sampai animasi smooth scroll benar-benar selesai (800ms)
+              // Saat slider sedang diam, lakukan reset posisi (silent reset) tanpa disadari user
+              setTimeout(() => {
+                if (ref.current && ref.current.scrollLeft >= originalWidth - 5) {
+                  ref.current.style.scrollSnapType = 'none';
+                  ref.current.scrollLeft -= originalWidth;
+                  void ref.current.offsetWidth;
+                  ref.current.style.scrollSnapType = '';
+                }
+              }, 800);
+            }
+          }
+          return;
+        }
+
+        // Fallback untuk non-looping
         if (scrollLeft + clientWidth >= scrollWidth - 10) {
           ref.current.scrollTo({ left: 0, behavior: 'auto' });
-        } else {
-          ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+          return;
         }
+        ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
       }
     };
 
-    const timerPricing = setInterval(() => slide(pricingScrollRef), 3000);
-    const timerTestimonial = setInterval(() => slide(testimonialScrollRef), 3800);
+    const timerPricing = setInterval(() => slide(pricingScrollRef, isPricingPaused, lastPricingInteraction, true, plans.length), 3000);
 
     return () => {
       clearInterval(timerPricing);
-      clearInterval(timerTestimonial);
     };
   }, []);
 
@@ -282,7 +333,7 @@ function Index() {
       {/* HERO */}
       <section className="relative pt-24 pb-20 px-6 grid-bg">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
-          <div className="reveal-ltr reveal py-6 md:py-12 md:pl-12 md:pr-0 lg:pr-0 h-full flex flex-col justify-center">
+          <div className="reveal-ltr reveal py-6 md:py-12 md:pl-16 lg:pl-24 md:pr-0 lg:pr-8 h-full flex flex-col justify-center">
 
             <h1 className="text-4xl md:text-[3.5rem] lg:text-[4rem] font-bold leading-[1.05] mb-6 text-center lg:text-left">
               Wujudkan <span className="text-gradient">Aplikasi</span> <span className="block mt-2 text-[0.64em]">Untuk Bisnis Modern Anda</span>
@@ -449,16 +500,16 @@ function Index() {
           </div>
           <div
             ref={pricingScrollRef}
-            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-4 -mt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            onMouseEnter={() => isSliderPaused.current = true}
-            onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
-            onTouchMove={(e) => lastInteractionTime.current = Date.now()}
-            onTouchEnd={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchCancel={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
+            className="flex flex-row md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none pb-4 pt-4 -mt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            onMouseEnter={() => isPricingPaused.current = true}
+            onMouseLeave={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
+            onTouchStart={(e) => { isPricingPaused.current = true; lastPricingInteraction.current = Date.now(); }}
+            onTouchMove={(e) => lastPricingInteraction.current = Date.now()}
+            onTouchEnd={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
+            onTouchCancel={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
           >
             {[...plans, ...plans, ...plans, ...plans].map((p, i) => (
-              <div key={`${p.name}-${i}`} className={`glass-card rounded-2xl p-8 relative flex flex-col items-center text-center w-[85vw] md:w-[calc(33.333%-16px)] shrink-0 snap-center ${p.featured ? "ring-2 ring-primary/60" : ""} ${i === 0 ? "reveal-ltr reveal" : "reveal"}`} style={{ animationDelay: `${(i % plans.length) * 120}ms` }}>
+              <div key={`${p.name}-${i}`} className={`glass-card rounded-2xl p-8 relative flex flex-col items-center text-center w-[85vw] md:w-auto shrink-0 snap-center md:snap-align-none ${p.featured ? "ring-2 ring-primary/60" : ""} ${i === 0 ? "reveal-ltr reveal" : "reveal"} ${i >= plans.length ? "hidden md:hidden max-md:flex" : ""}`} style={{ animationDelay: `${(i % plans.length) * 120}ms` }}>
                 {p.featured && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap" style={{ background: "var(--gradient-primary)", color: "var(--primary-foreground)" }}>Paling Populer</div>}
                 <h3 className="text-xl font-semibold mb-1">{p.name}</h3>
                 <p className="text-sm text-muted-foreground mb-6">{p.desc}</p>
@@ -489,28 +540,50 @@ function Index() {
             <h2 className="text-4xl md:text-5xl font-bold">Dipercaya oleh Owner & Perusahaan</h2>
           </div>
           <div
-            ref={testimonialScrollRef}
-            className="flex flex-row gap-6 overflow-x-auto snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            onMouseEnter={() => isSliderPaused.current = true}
-            onMouseLeave={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchStart={(e) => { isSliderPaused.current = true; lastInteractionTime.current = Date.now(); }}
-            onTouchMove={(e) => lastInteractionTime.current = Date.now()}
-            onTouchEnd={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
-            onTouchCancel={() => { isSliderPaused.current = false; lastInteractionTime.current = Date.now(); }}
+            className="relative w-full max-w-lg md:max-w-none mx-auto h-[260px] md:h-[220px]"
+            onMouseEnter={() => isTestimonialPaused.current = true}
+            onMouseLeave={() => isTestimonialPaused.current = false}
+            onTouchStart={() => isTestimonialPaused.current = true}
+            onTouchEnd={() => isTestimonialPaused.current = false}
+            onTouchCancel={() => isTestimonialPaused.current = false}
           >
-            {[...testimonials, ...testimonials, ...testimonials, ...testimonials].map((t, i) => (
-              <div key={`${t.name}-${i}`} className={`glass-card rounded-2xl p-6 reveal w-[85vw] md:w-[calc(33.333%-16px)] shrink-0 snap-center`} style={{ animationDelay: `${(i % testimonials.length) * 100}ms` }}>
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={`star-${i}-${j}`} className={`w-4 h-4 ${j < (t.rating || 5) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}`} />
-                  ))}
+            {testimonials.map((t, i) => {
+              const diff = (i - currentTesti + testimonials.length) % testimonials.length;
+              
+              let mobileClass = "translate-x-[50%] opacity-0 z-0 pointer-events-none";
+              if (diff === 0) mobileClass = "translate-x-0 opacity-100 z-10 pointer-events-auto";
+              else if (diff === testimonials.length - 1) mobileClass = "-translate-x-[50%] opacity-0 z-0 pointer-events-none";
+
+              let desktopClass = "md:translate-x-[calc(200%_+_48px)] md:opacity-0 md:z-0 md:pointer-events-none";
+              if (diff === 0) desktopClass = "md:translate-x-0 md:opacity-100 md:z-10 md:pointer-events-auto";
+              else if (diff === 1) desktopClass = "md:translate-x-[calc(100%_+_24px)] md:opacity-100 md:z-10 md:pointer-events-auto";
+              else if (diff === 2) desktopClass = "md:translate-x-[calc(200%_+_48px)] md:opacity-100 md:z-10 md:pointer-events-auto";
+              else if (diff === testimonials.length - 1) desktopClass = "md:-translate-x-[calc(100%_+_24px)] md:opacity-0 md:z-0 md:pointer-events-none";
+
+              return (
+                <div key={`${t.name}-${i}`} className={`absolute inset-y-0 left-0 glass-card rounded-2xl p-6 md:p-8 flex flex-col justify-center transition-all duration-700 ease-in-out w-full md:w-[calc(33.333%_-_16px)] ${mobileClass} ${desktopClass}`}>
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={`star-${i}-${j}`} className={`w-4 h-4 ${j < (t.rating || 5) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}`} />
+                    ))}
+                  </div>
+                  <p className="text-xs md:text-sm text-foreground/90 mb-6 flex-grow">{t.text}</p>
+                  <div className="mt-auto">
+                    <div className="font-semibold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
                 </div>
-                <p className="text-sm md:text-base text-foreground/90 mb-6">{t.text}</p>
-                <div>
-                  <div className="font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
-              </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-center gap-2 mt-8">
+            {testimonials.map((_, i) => (
+              <button
+                key={`dot-${i}`}
+                onClick={() => setCurrentTesti(i)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+              />
             ))}
           </div>
         </div>

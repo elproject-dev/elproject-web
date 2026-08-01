@@ -56,7 +56,7 @@
 
   --gradient-primary: linear-gradient(135deg, oklch(0.65 0.36 295), oklch(0.65 0.25 240));
   --gradient-glow: radial-gradient(circle at 50% 0%, oklch(0.65 0.36 295 / 0.35), transparent 60%);
-  --gradient-card: linear-gradient(160deg, oklch(0.2 0.04 270 / 0.9), oklch(0.16 0.03 270 / 0.6));
+  --gradient-card: linear-gradient(160deg, oklch(0.2 0.04 270 / 0.20), oklch(100% 0.00011 271.152 / 0.1));
   --shadow-glow: 0 0 60px oklch(0.65 0.36 295 / 0.45);
   --shadow-card: 0 20px 60px -20px oklch(0.08 0.03 270 / 0.8);
 }
