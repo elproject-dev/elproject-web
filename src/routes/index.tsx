@@ -365,10 +365,9 @@ function Index() {
             </div>
           </div>
           <div className="reveal p-2 md:p-8 flex items-center justify-center w-full h-full">
-            <div className="relative float-glow w-full aspect-[16/9] mx-auto mt-8 md:mt-12">
-              <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/50 shadow-2xl group">
+            <div className="relative float-glow w-full aspect-[16/9] mx-auto mt-8 md:mt-12 mb-8 md:mb-0 group">
+              <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/50 shadow-2xl">
                 {slides.map((slide, index) => {
-                  // Tentukan posisi gambar (aktif, di kiri, atau di kanan)
                   let positionClass = "translate-x-full opacity-0 z-0";
                   if (index === currentSlide) positionClass = "translate-x-0 opacity-100 z-10";
                   else if (index === (currentSlide - 1 + slides.length) % slides.length) positionClass = "-translate-x-full opacity-0 z-0";
@@ -382,36 +381,36 @@ function Index() {
                     />
                   );
                 })}
+              </div>
 
-                {/* Tombol Navigasi Kiri */}
-                <button
-                  onClick={prevSlide}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4 rotate-180" />
-                </button>
+              {/* Tombol Navigasi Kiri */}
+              <button
+                onClick={prevSlide}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+              </button>
 
-                {/* Tombol Navigasi Kanan */}
-                <button
-                  onClick={nextSlide}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              {/* Tombol Navigasi Kanan */}
+              <button
+                onClick={nextSlide}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
 
-                {/* Indikator Dot */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                  {slides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide
-                        ? "w-6 h-2 bg-primary shadow-[0_0_8px_var(--color-primary)]"
-                        : "w-2 h-2 bg-foreground/30 hover:bg-foreground/60"
-                        }`}
-                    />
-                  ))}
-                </div>
+              {/* Indikator Dot */}
+              <div className="absolute -bottom-6 md:bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                {slides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    className={`rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide
+                      ? "w-6 h-2 bg-primary shadow-[0_0_8px_var(--color-primary)]"
+                      : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/60 md:bg-foreground/30 md:hover:bg-foreground/60"
+                      }`}
+                  />
+                ))}
               </div>
               <div className="absolute -inset-4 -z-10 rounded-3xl opacity-50" style={{ background: "var(--gradient-glow)" }} />
             </div>
