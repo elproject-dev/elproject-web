@@ -121,22 +121,31 @@ function Showcase() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
       {/* NAV */}
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl border-b border-border/40 bg-background/60">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="group font-display text-xl font-bold tracking-wider flex items-center relative pb-1 ml-0 md:ml-12">
-            <span className="relative inline-block shine-text" data-text="ELPROJECT">
-              <span className="text-foreground/90 transition-colors duration-300 group-hover:text-primary">EL</span>
-              <span className="text-gradient">PROJECT</span>
-            </span>
-            <span className="absolute bottom-0 left-0 w-full h-[2px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" style={{ background: "var(--gradient-primary)" }} />
-          </Link>
+          <div className="flex items-center gap-8">
+            <Link to="/" className="group font-display text-xl font-bold tracking-wider flex items-center relative pb-1 ml-0 md:ml-12">
+              <span className="relative inline-block shine-text" data-text="ELPROJECT">
+                <span className="text-foreground/90 transition-colors duration-300 group-hover:text-primary">EL</span>
+                <span className="text-gradient">PROJECT</span>
+              </span>
+              <span className="absolute bottom-0 left-0 w-full h-[2px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" style={{ background: "var(--gradient-primary)" }} />
+            </Link>
+            
+            <nav className="hidden lg:flex items-center gap-6">
+              <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">Home</Link>
+              <Link to="/showcase" className="text-sm font-medium text-primary transition-colors">Portofolio</Link>
+              <Link to="/blog" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">Blog</Link>
+            </nav>
+          </div>
+          
+
           
           <div className="flex items-center">
             <a href="https://wa.me/6283867180887?text=halo,saya%20ingin%20menanyakan%20pembuatan%20aplikasi,%0Asepertinya%20saya%20tertarik%20setelah%20melihat%20web%20ini.%0A%0A%0Ahttps://www.elproject.studio" target="_blank" rel="noopener noreferrer" className="btn-primary !hidden lg:!flex text-sm !py-2 !px-12 mr-10">Konsultasi <ChevronRight className="w-4 h-4" /></a>
             <button
-              aria-label="Buka menu"
               className="lg:hidden p-2 -mr-2 text-foreground/80 hover:text-primary transition-colors cursor-pointer"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -159,7 +168,6 @@ function Showcase() {
         {/* Pop-up Card */}
         <div className={`relative w-full max-w-[85vw] glass-card border border-border/50 shadow-2xl rounded-3xl p-8 flex flex-col items-center transition-all duration-300 ${isMobileMenuOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-8"}`}>
           <button
-            aria-label="Tutup menu"
             className="absolute top-4 right-4 p-2 bg-foreground/5 rounded-full text-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -169,6 +177,12 @@ function Showcase() {
           <div className="text-xs font-semibold text-gradient uppercase tracking-widest mb-8">Menu Navigasi</div>
 
           <nav className="flex flex-col gap-5 text-center w-full">
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Home</Link>
+            <Link to="/showcase" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-primary transition-all duration-300 hover:scale-105">Portofolio</Link>
+            <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Blog</Link>
+            
+            <div className="w-full h-px bg-border/50 my-2" />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-[-10px]">Navigasi Halaman</span>
             {[
               { href: "/#layanan", label: "Layanan" },
               { href: "/#kenapa", label: "Kenapa Kami" },
@@ -179,7 +193,7 @@ function Showcase() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105"
+                className="font-medium text-sm text-foreground/70 transition-all duration-300 hover:text-primary hover:scale-105"
               >
                 {link.label}
               </a>
@@ -263,8 +277,8 @@ function Showcase() {
 
       {/* FOOTER */}
       <footer className="border-t border-border/40 py-8 px-6 text-center text-[10px] md:text-xs text-muted-foreground transition-all duration-300 hover:text-primary hover:drop-shadow-[0_0_8px_var(--color-primary)] cursor-default">
-        © 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS
+        © 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS © 2026
       </footer>
-    </main>
+    </div>
   );
 }

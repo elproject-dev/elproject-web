@@ -100,6 +100,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "EL Project",
+          "image": "https://www.elproject.studio/og-image.jpg",
+          "url": "https://www.elproject.studio",
+          "telephone": "+6283867180887",
+          "priceRange": "$$",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "ID"
+          },
+          "description": "Jasa pembuatan aplikasi mobile, web apps, iOS, dan website modern dengan desain premium."
+        })
+      }
+    ]
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -108,25 +127,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "EL Project",
-    "url": "https://www.elproject.studio",
-    "logo": "https://www.elproject.studio/icon.svg",
-    "description": "Studio digital profesional untuk pembuatan aplikasi mobile, web apps, iOS, dan website modern.",
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "telephone": "+6283867180887",
-      "contactType": "customer service"
-    }
-  };
-
   return (
-    <html lang="id">
+    <html lang="en">
       <head>
         <HeadContent />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       </head>
       <body>
         {children}
