@@ -108,10 +108,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "EL Project",
+    "url": "https://www.elproject.studio",
+    "logo": "https://www.elproject.studio/icon.svg",
+    "description": "Studio digital profesional untuk pembuatan aplikasi mobile, web apps, iOS, dan website modern.",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+6283867180887",
+      "contactType": "customer service"
+    }
+  };
+
   return (
-    <html lang="en">
+    <html lang="id">
       <head>
         <HeadContent />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       </head>
       <body>
         {children}

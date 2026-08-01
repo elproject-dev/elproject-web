@@ -259,7 +259,7 @@ function Index() {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <main className="min-h-screen overflow-x-hidden">
       {/* NAV */}
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl border-b border-border/40 bg-background/60">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
@@ -274,6 +274,7 @@ function Index() {
           <div className="flex items-center">
             <a href="https://wa.me/6283867180887?text=halo,saya%20ingin%20menanyakan%20pembuatan%20aplikasi,%0Asepertinya%20saya%20tertarik%20setelah%20melihat%20web%20ini.%0A%0A%0Ahttps://www.elproject.studio" target="_blank" rel="noopener noreferrer" className="btn-primary !hidden lg:!flex text-sm !py-2 !px-12">Konsultasi <ChevronRight className="w-4 h-4" /></a>
             <button
+              aria-label="Buka menu"
               className="lg:hidden p-2 -mr-2 text-foreground/80 hover:text-primary transition-colors cursor-pointer"
               onClick={() => setIsMobileMenuOpen(true)}
             >
@@ -296,6 +297,7 @@ function Index() {
         {/* Pop-up Card */}
         <div className={`relative w-full max-w-[85vw] glass-card border border-border/50 shadow-2xl rounded-3xl p-8 flex flex-col items-center transition-all duration-300 ${isMobileMenuOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-8"}`}>
           <button
+            aria-label="Tutup menu"
             className="absolute top-4 right-4 p-2 bg-foreground/5 rounded-full text-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -385,6 +387,7 @@ function Index() {
 
               {/* Tombol Navigasi Kiri */}
               <button
+                aria-label="Slide sebelumnya"
                 onClick={prevSlide}
                 className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
               >
@@ -393,6 +396,7 @@ function Index() {
 
               {/* Tombol Navigasi Kanan */}
               <button
+                aria-label="Slide selanjutnya"
                 onClick={nextSlide}
                 className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
               >
@@ -403,6 +407,7 @@ function Index() {
               <div className="absolute -bottom-6 md:bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                 {slides.map((_, index) => (
                   <button
+                    aria-label={`Pilih slide ${index + 1}`}
                     key={index}
                     onClick={() => goToSlide(index)}
                     className={`rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide
@@ -579,6 +584,7 @@ function Index() {
           <div className="flex justify-center gap-2 mt-8">
             {testimonials.map((_, i) => (
               <button
+                aria-label={`Lihat testimoni ${i + 1}`}
                 key={`dot-${i}`}
                 onClick={() => setCurrentTesti(i)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
@@ -608,8 +614,8 @@ function Index() {
       </section>
 
       <footer className="border-t border-border/40 py-8 px-6 text-center text-[10px] md:text-xs text-muted-foreground transition-all duration-300 hover:text-primary hover:drop-shadow-[0_0_8px_var(--color-primary)] cursor-default">
-        © 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS © 2026
+        © 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS
       </footer>
-    </div>
+    </main>
   );
 }
