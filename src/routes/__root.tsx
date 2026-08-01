@@ -86,8 +86,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://www.elproject.studio/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: "https://www.elproject.studio/og-image.jpg" },
+      { name: "theme-color", content: "#000000" },
     ],
     links: [
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/icon.svg" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
@@ -116,6 +119,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.error('ServiceWorker registration failed:', err);
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

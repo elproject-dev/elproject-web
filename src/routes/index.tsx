@@ -7,8 +7,8 @@ import { useReveal } from "@/hooks/use-reveal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ELPROJECT — Software House & Studio Digital Profesional" },
-      { name: "description", content: "Jasa pembuatan aplikasi mobile (Android/iOS), web apps, dan sistem IT custom kelas dunia untuk skala bisnis modern Anda." },
+      { title: "Software Development & Studio Digital Profesional" },
+      { name: "description", content: "Layanan pembuatan aplikasi mobile (Android/iOS), web apps, dan sistem IT custom kelas dunia untuk skala bisnis modern Anda." },
       { property: "og:image", content: "https://www.elproject.studio/og-image.jpg" },
       { name: "twitter:image", content: "https://www.elproject.studio/og-image.jpg" },
     ],
