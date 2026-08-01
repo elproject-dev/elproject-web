@@ -78,16 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EL Project — Jasa Pembuatan Aplikasi Mobile, Web & iOS" },
-      { name: "description", content: "Studio digital pro untuk pembuatan aplikasi mobile, web apps, iOS, dan website modern dengan desain premium." },
-      { name: "keywords", content: "jasa pembuatan aplikasi, bikin aplikasi, web development, mobile apps development, iOS development, software house, el project, elproject studio" },
+      { title: "EL Project | Jasa Pembuatan Aplikasi Mobile, Web, Desktop & Server" },
+      { name: "description", content: "EL Project adalah penyedia jasa pembuatan aplikasi mobile (Android & iOS), desktop, website modern, pembuatan server, hingga konsultasi IT profesional." },
+      { name: "keywords", content: "jasa pembuatan aplikasi, jasa pembuatan website, aplikasi mobile android, ios developer, bikin aplikasi desktop, web developer indonesia, konsultan it, jasa pembuatan server, konten kreatif, el project, elproject studio, software house" },
       { name: "robots", content: "index, follow" },
       { name: "author", content: "EL Project" },
-      { property: "og:title", content: "EL Project — Pro App Development" },
-      { property: "og:description", content: "Wujudkan aplikasi untuk bisnis Anda — kami membangun aplikasi mobile,ios,windows,android dan website modern untuk kemudahan pengguna" },
+      { property: "og:title", content: "EL Project | Layanan Profesional App & Web Development" },
+      { property: "og:description", content: "Kami memberikan rekomendasi dan arahan terbaik untuk membangun aplikasi mobile, desktop, dan website modern demi kesuksesan bisnis Anda." },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://www.elproject.studio/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "EL Project | Jasa Pembuatan Aplikasi & Website" },
+      { name: "twitter:description", content: "Solusi lengkap pembuatan aplikasi mobile, desktop, web apps, hingga server dan konsultasi bisnis." },
       { name: "twitter:image", content: "https://www.elproject.studio/og-image.jpg" },
       { name: "theme-color", content: "#000000" },
     ],
@@ -106,12 +108,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "LocalBusiness",
+          "@type": "ProfessionalService",
           "name": "EL Project",
           "image": "https://www.elproject.studio/og-image.jpg",
           "url": "https://www.elproject.studio",
           "telephone": "+6283867180887",
           "priceRange": "$$",
+          "knowsAbout": [
+            "Mobile App Development",
+            "Web Development",
+            "iOS App Development",
+            "Android App Development",
+            "Desktop App Development",
+            "Server Infrastructure",
+            "IT Consulting"
+          ],
           "address": {
             "@type": "PostalAddress",
             "addressCountry": "ID"
@@ -120,7 +131,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "sameAs": [
             "https://www.instagram.com/elproject_development"
           ],
-          "description": "Kami adalah salah satu penyedia layanan jasa pembuatan aplikasi mobile,dekstop, ios dan website, aplikasi mobile android,ios,desktop,serta web app. Kami menyediakan jasa pembuatan server juga,konsultasi bisnis,serta menyediakan jasa pembuatan Konten Kreatif. Kami akan memberikan rekomendasi dan arahan terbaik untuk bisnis Anda"
+          "description": "Kami adalah salah satu penyedia layanan jasa pembuatan aplikasi mobile, dekstop, ios dan website, aplikasi mobile android, ios, desktop, serta web app. Kami menyediakan jasa pembuatan server juga, konsultasi bisnis, serta menyediakan jasa pembuatan Konten Kreatif. Kami akan memberikan rekomendasi dan arahan terbaik untuk bisnis Anda"
         })
       }
     ]
