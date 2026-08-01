@@ -540,7 +540,7 @@ function Index() {
             <h2 className="text-4xl md:text-5xl font-bold">Dipercaya oleh Owner & Perusahaan</h2>
           </div>
           <div
-            className="relative w-full max-w-lg md:max-w-none mx-auto h-[260px] md:h-[220px]"
+            className="relative w-full max-w-lg md:max-w-none mx-auto h-[220px] md:h-[220px]"
             onMouseEnter={() => isTestimonialPaused.current = true}
             onMouseLeave={() => isTestimonialPaused.current = false}
             onTouchStart={() => isTestimonialPaused.current = true}
@@ -567,10 +567,10 @@ function Index() {
                       <Star key={`star-${i}-${j}`} className={`w-4 h-4 ${j < (t.rating || 5) ? 'fill-primary text-primary' : 'text-muted-foreground/30'}`} />
                     ))}
                   </div>
-                  <p className="text-xs md:text-sm text-foreground/90 mb-6 flex-grow">{t.text}</p>
+                  <p className="text-base md:text-lg text-foreground/90 mb-6 flex-grow">{t.text}</p>
                   <div className="mt-auto">
-                    <div className="font-semibold">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                    <div className="text-lg md:text-xl font-semibold">{t.name}</div>
+                    <div className="text-base md:text-lg text-muted-foreground">{t.role}</div>
                   </div>
                 </div>
               );
