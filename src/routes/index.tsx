@@ -549,7 +549,7 @@ function Index() {
           >
             {testimonials.map((t, i) => {
               const diff = (i - currentTesti + testimonials.length) % testimonials.length;
-              
+
               let mobileClass = "translate-x-[50%] opacity-0 z-0 pointer-events-none";
               if (diff === 0) mobileClass = "translate-x-0 opacity-100 z-10 pointer-events-auto";
               else if (diff === testimonials.length - 1) mobileClass = "-translate-x-[50%] opacity-0 z-0 pointer-events-none";
