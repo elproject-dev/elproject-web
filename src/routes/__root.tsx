@@ -83,7 +83,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "keywords", content: "jasa pembuatan aplikasi, bikin aplikasi, web development, mobile apps development, iOS development, software house, el project, elproject studio" },
       { name: "robots", content: "index, follow" },
       { name: "author", content: "EL Project" },
-      { name: "google-site-verification", content: "KODE_VERIFIKASI_GOOGLE_DISINI" },
       { property: "og:title", content: "EL Project — Pro App Development" },
       { property: "og:description", content: "Wujudkan aplikasi untuk bisnis Anda — kami membangun aplikasi mobile,ios,windows,android dan website modern untuk kemudahan pengguna" },
       { property: "og:type", content: "website" },
