@@ -116,7 +116,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             "@type": "PostalAddress",
             "addressCountry": "ID"
           },
-          "description": "Jasa pembuatan aplikasi mobile, web apps, iOS, dan website modern dengan desain premium."
+          "hasMap": "https://maps.app.goo.gl/2Zz55g4VUP2fi1Ya6",
+          "sameAs": [
+            "https://www.instagram.com/elproject_development"
+          ],
+          "description": "Kami adalah salah satu penyedia layanan jasa pembuatan aplikasi mobile,dekstop, ios dan website, aplikasi mobile android,ios,desktop,serta web app. Kami menyediakan jasa pembuatan server juga,konsultasi bisnis,serta menyediakan jasa pembuatan Konten Kreatif. Kami akan memberikan rekomendasi dan arahan terbaik untuk bisnis Anda"
         })
       }
     ]
