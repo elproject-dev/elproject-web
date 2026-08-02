@@ -112,14 +112,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-W475F8Z5');`,
       },
       {
-        src: "https://www.googletagmanager.com/gtag/js?id=G-6NDM279HJK",
+        src: "https://www.googletagmanager.com/gtag/js?id=G-6VKWPQVQPQ",
         async: true,
       },
       {
         children: `window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-6NDM279HJK');`,
+  gtag('config', 'G-6VKWPQVQPQ');`,
       },
       {
         type: "application/ld+json",
