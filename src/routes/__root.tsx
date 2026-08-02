@@ -78,9 +78,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "EL Project | Jasa Pembuatan Aplikasi Mobile, Web, Desktop & Server" },
+      { title: "EL Project | Jasa Pembuatan Aplikasi Mobile, Web, Desktop & Server, Kursus Pemrograman Sampai Bisa, Mentoring Coding Programmer Profesional, Kelas Belajar Coding Pemula hingga Mahir" },
       { name: "description", content: "EL Project adalah penyedia jasa pembuatan aplikasi mobile (Android & iOS), desktop, website modern, pembuatan server, hingga konsultasi IT profesional." },
-      { name: "keywords", content: "jasa pembuatan aplikasi, jasa pembuatan website, aplikasi mobile android, ios developer, bikin aplikasi desktop, web developer indonesia, konsultan it, jasa pembuatan server, konten kreatif, el project, elproject studio, software house" },
+      { name: "keywords", content: "jasa pembuatan aplikasi, jasa pembuatan website, aplikasi mobile android, ios developer, bikin aplikasi desktop, web developer indonesia, konsultan it, jasa pembuatan server, konten kreatif, el project, elproject studio, software house, jasa pembuatan aplikasi jogja, jasa pembuatan website yogyakarta, software house jogja, web developer yogyakarta, bikin aplikasi android jogja, ios developer yogyakarta, pembuatan aplikasi kasir jogja, jasa it yogyakarta, developer aplikasi jogja, el project yogyakarta, elproject studio, konsultan it jogja, jasa pembuatan server yogyakarta, software house indonesia, jasa pembuatan aplikasi jakarta, jasa pembuatan website jakarta, software house jakarta, web developer jakarta, bikin aplikasi android jakarta, ios developer jakarta, pembuatan aplikasi kasir jakarta, jasa it jakarta, developer aplikasi jakarta, el project jakarta, elproject studio, konsultan it jakarta, jasa pembuatan server jakarta, software house jakarta" },
       { name: "robots", content: "index, follow" },
       { name: "author", content: "EL Project" },
       { property: "og:title", content: "EL Project | Layanan Profesional App & Web Development" },
@@ -434,8 +434,10 @@ function RootComponent() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        console.error('ServiceWorker registration failed:', err);
+      navigator.serviceWorker.register('/sw.js').then(() => {
+        // SW registered successfully
+      }).catch(() => {
+        // SW registration may be blocked by browser extension or privacy settings — this is non-fatal
       });
     }
   }, []);
