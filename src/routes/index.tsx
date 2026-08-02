@@ -7,10 +7,11 @@ import { useReveal } from "@/hooks/use-reveal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Software Development & Studio Digital Profesional" },
-      { name: "description", content: "Layanan pembuatan aplikasi mobile (Android/iOS), web apps, dan sistem IT custom kelas dunia untuk skala bisnis modern Anda." },
+      { title: "Layanan Jasa Pembuatan Aplikasi Mobile,Desktop & Website Modern" },
+      { name: "description", content: "Pembuatan Aplikasi Android, iOS, Desktop, WebApps, Aplikasi Costum, Website dan Server untuk kebutuhan Bisnis Anda." },
       { property: "og:image", content: "https://www.elproject.studio/og-image.jpg" },
       { name: "twitter:image", content: "https://www.elproject.studio/og-image.jpg" },
+      { name: "robots", content: "max-image-preview:large" },
     ],
   }),
   component: Index,
@@ -272,7 +273,7 @@ function Index() {
               <span className="absolute bottom-0 left-0 w-full h-[2px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" style={{ background: "var(--gradient-primary)" }} />
             </Link>
           </div>
-            
+
           <nav className="hidden lg:flex items-center justify-center gap-8 lg:w-1/3">
             <Link to="/" className="text-sm font-bold text-primary transition-colors">Home</Link>
             <Link to="/showcase" className="text-sm font-bold text-foreground/70 hover:text-primary transition-colors">Portofolio</Link>
@@ -318,7 +319,7 @@ function Index() {
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-primary transition-all duration-300 hover:scale-105">Home</Link>
             <Link to="/showcase" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Portofolio</Link>
             <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Blog</Link>
-            
+
             <div className="w-full h-px bg-border/50 my-2" />
 
             <a href="https://wa.me/6283867180887?text=halo,saya%20ingin%20menanyakan%20pembuatan%20aplikasi,%0Asepertinya%20saya%20tertarik%20setelah%20melihat%20web%20ini.%0A%0A%0Ahttps://www.elproject.studio" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary w-full justify-center !py-3 mt-2 shadow-[0_0_15px_var(--color-primary)]">
