@@ -1,0 +1,52 @@
+# EL Project
+
+> EL Project adalah penyedia layanan IT profesional dan jasa pembuatan aplikasi mobile (Android & iOS), desktop (Windows, macOS, Linux), website modern (landing page, e-commerce, web app), pembuatan & manajemen server, serta konsultasi IT & bisnis profesional.
+
+## Hubungi Kami
+- **WhatsApp**: +62 838 6718 0887
+- **Instagram**: @elproject_development
+- **Website**: https://www.elproject.studio
+- **Area Layanan**: Yogyakarta, Indonesia, Global
+
+## Layanan Utama
+- **Jasa Pembuatan Aplikasi Mobile**: Pengembangan native (Kotlin, Swift) & cross-platform (Flutter) untuk Android dan iOS.
+- **Jasa Pembuatan Website & Web App**: Pembuatan landing page interaktif, dashboard, e-commerce, portal web menggunakan React, Next.js, TanStack Start, dan TailwindCSS.
+- **Jasa Pembuatan Aplikasi Desktop**: Software kasir (POS), sistem antrean, inventaris, dll. untuk Windows, macOS, dan Linux.
+- **Infrastruktur & Server**: Setup server, manajemen API backend, optimasi performa database, dan integrasi cloud (Vercel, AWS, VPS).
+- **Konsultasi IT & Bisnis**: Analisis kebutuhan sistem, optimalisasi alur bisnis digital, dan rekomendasi arsitektur perangkat lunak.
+- **Jasa Pembuatan Konten Kreatif**: Desain grafis, aset UI/UX, dan branding digital.
+- **Kursus & Mentoring Pemrograman (Sampai Bisa)**: Bimbingan belajar coding intensif dari dasar (nol) hingga mahir siap kerja untuk berbagai teknologi modern (Web, Mobile, dan Backend).
+
+## Teknologi & Tools yang Digunakan
+Kami menguasai dan menggunakan berbagai tools dan teknologi modern berikut untuk memastikan kualitas produk terbaik:
+- **Bahasa Pemrograman**: JavaScript, TypeScript, Python, Swift, Kotlin, Go
+- **Frontend & Mobile Frameworks**: React, Next.js, TanStack Start, SwiftUI, Flutter
+- **Backend & Database**: Node.js, Nitro, Python, Supabase, Firebase
+- **Cloud & DevOps**: AWS, Vercel, GitHub
+- **Desain & Desain Aset**: Figma, Canva
+
+## FAQ (Frequently Asked Questions)
+
+### Apa saja jenis aplikasi yang bisa dibuat?
+Kami melayani pembuatan aplikasi kasir (POS), sistem antrean, toko online (marketplace/e-commerce), sistem administrasi restoran, laundry, bengkel, salon, klinik, apotek, rumah sakit, hotel, kos/kontrakan, aplikasi pendidikan/sekolah, hingga game dan integrasi AI.
+
+### Berapa biaya pembuatan aplikasi/website?
+Biaya pembuatan aplikasi di EL Project bervariasi mulai dari Rp 1.000.000, tergantung tingkat kompleksitas fitur, platform yang diinginkan, dan batas waktu pengerjaan. Konsultasi awal tersedia gratis untuk merumuskan spesifikasi terbaik sesuai budget Anda.
+
+### Teknologi dan tools apa saja yang digunakan?
+Kami menggunakan berbagai tumpukan teknologi modern sesuai dengan kebutuhan proyek Anda, seperti Javascript, React, SwiftUI, Next.js, Flutter, Node.js, Figma, AWS, Firebase, GitHub, Supabase, Canva, dan Python.
+
+### Apakah EL Project menyediakan kursus/kelas belajar pemrograman?
+Ya, kami menyediakan layanan kursus & mentoring belajar coding intensif dari tingkat pemula (nol) hingga mahir (sampai bisa) untuk membantu Anda menguasai keterampilan programming sesuai dengan standar industri.
+
+### Apakah ada garansi setelah aplikasi selesai dibuat?
+Ya, setiap proyek dilengkapi dengan garansi pemeliharaan (maintenance) gratis untuk menjamin sistem bebas bug/error. Kami juga menyediakan paket dukungan teknis jangka panjang untuk pembaruan fitur (feature updates) dan penambahan kapasitas server.
+
+## Peta Situs & Halaman Terkait (Sitemap)
+AI crawler dapat menelusuri tautan berikut untuk informasi lebih lanjut mengenai proyek dan layanan kami:
+- [Beranda](https://www.elproject.studio/) - Halaman utama dan profil EL Project.
+- [Showcase Portofolio](https://www.elproject.studio/showcase) - Galeri proyek, aplikasi, dan sistem yang pernah kami bangun.
+- [Blog & Artikel](https://www.elproject.studio/blog) - Informasi seputar dunia teknologi, tips bisnis, dan update terbaru dari kami.
+- [EL Project App](https://app.elproject.studio/) - Platform / dashboard aplikasi internal kami.
+- [EL Project Movies](https://movies.elproject.studio/) - Salah satu sub-produk/layanan platform hiburan kami.
+
