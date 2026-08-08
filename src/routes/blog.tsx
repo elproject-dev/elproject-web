@@ -159,9 +159,9 @@ Selain keamanan dan performa, pemeliharaan berkala juga diperlukan untuk memasti
           </div>
             
           <nav className="hidden lg:flex items-center justify-center gap-8 lg:w-1/3">
-            <Link to="/" className="text-sm font-bold text-foreground/70 hover:text-primary transition-colors">Home</Link>
-            <Link to="/showcase" className="text-sm font-bold text-foreground/70 hover:text-primary transition-colors">Portofolio</Link>
-            <Link to="/blog" onClick={() => setSelectedPostIndex(null)} className="text-sm font-bold text-primary transition-colors cursor-pointer">Blog</Link>
+            <Link to="/" className="text-sm font-bold text-foreground/80 hover:text-primary transition-colors">Beranda</Link>
+            <a href="/#portofolio" className="text-sm font-bold text-foreground/80 hover:text-primary transition-colors">Konsep</a>
+            <Link to="/blog" className="text-sm font-bold text-gradient hover:opacity-80 transition-opacity">Wawasan</Link>
           </nav>
 
           <div className="flex items-center justify-end lg:w-1/3">
@@ -188,9 +188,9 @@ Selain keamanan dan performa, pemeliharaan berkala juga diperlukan untuk memasti
           </button>
           <div className="text-xs font-semibold text-gradient uppercase tracking-widest mb-8">Menu Navigasi</div>
           <nav className="flex flex-col gap-5 text-center w-full">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Home</Link>
-            <Link to="/showcase" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Portofolio</Link>
-            <Link to="/blog" onClick={() => { setSelectedPostIndex(null); setIsMobileMenuOpen(false); }} className="font-bold text-lg text-primary transition-all duration-300 hover:scale-105">Blog</Link>
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Beranda</Link>
+            <a href="/#portofolio" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Konsep</a>
+            <Link to="/blog" onClick={() => { setSelectedPostIndex(null); setIsMobileMenuOpen(false); }} className="font-bold text-lg text-gradient hover:opacity-80 transition-all duration-300 hover:scale-105">Wawasan</Link>
             <div className="w-full h-px bg-border/50 my-2" />
             <a href="https://wa.me/6283867180887?text=halo" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary w-full justify-center !py-3 mt-2 shadow-[0_0_15px_var(--color-primary)]">
               Konsultasi

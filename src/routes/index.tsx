@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, MonitorSmartphone, Server, Search, PenTool, LineChart, ChevronRight, Gem, Rocket, Shield, Code2, Check, Star, Menu, X, Palette, ClockArrowUp, Paintbrush, Figma, Layers } from "lucide-react";
+import { Globe, MonitorSmartphone, Server, Search, PenTool, LineChart, ChevronRight, Gem, Rocket, Shield, Code2, Check, Star, Menu, X, Palette, ClockArrowUp, Paintbrush, Figma, Layers, ArrowUpRight, ShoppingCart, School, LayoutTemplate, CalendarCheck, Settings, Code } from "lucide-react";
 import { LuPaintbrushVertical } from "react-icons/lu";
 import { useReveal } from "@/hooks/use-reveal";
 
@@ -18,25 +18,94 @@ export const Route = createFileRoute("/")({
 });
 
 const services = [
-  { icon: Globe, title: "Web Development", desc: "Pembuatan website modern, responsif, dan SEO-friendly", tag: "React · Next.js · WordPress" },
-  { icon: Server, title: "Build Server", desc: "pembuatan server pribadi untuk kebutuhan data bisnis", tag: "Database · Network · Security" },
-  { icon: Code2, title: "Development Apps", desc: "Pembuatan aplikasi modern untuk semua bisnis digital", tag: "Android · Windows · macOS · Linux" },
-  { icon: Search, title: "SEO Optimization", desc: "Tingkatkan peringkat website Anda di mesin pencarian", tag: "On-Page · Off-Page · Technical" },
-  { icon: LuPaintbrushVertical, title: "Graphic Design", desc: "Desain visual yang menarik untuk memperkuat branding.", tag: "UI/UX · Branding · Illustration · Canva · Figma" },
-  { icon: LineChart, title: "Business Consulting", desc: "Konsultasi bisnis terpercaya untuk identifikasi peluang usaha", tag: "Strategy · Operations · Management" },
+  { icon: Globe, title: "Web Development", desc: "Pembuatan website modern, responsif, dan SEO-friendly", tag: "React · Next.js · WordPress", bgImage: "/source_code_indonesia.webp" },
+  { icon: Server, title: "Build Server", desc: "pembuatan server database untuk kebutuhan data bisnis", tag: "Database · Network · Security", bgImage: "/server_bg2.webp" },
+  { icon: Code2, title: "Development Apps", desc: "Pembuatan aplikasi modern untuk semua bisnis digital", tag: "Android · Windows · macOS · Linux", bgImage: "/mobile-dummy1.webp" },
+  { icon: Search, title: "SEO Optimization", desc: "Tingkatkan peringkat website Anda di mesin pencarian", tag: "On-Page · Off-Page · Technical", bgImage: "/seo_indonesia.webp" },
+  { icon: LuPaintbrushVertical, title: "Graphic Design", desc: "Desain visual yang menarik untuk memperkuat branding.", tag: "UI/UX · Branding · Canva · Figma", bgImage: "/desain_indo.webp" },
+  { icon: LineChart, title: "Business Consulting", desc: "Konsultasi bisnis terpercaya untuk identifikasi usaha", tag: "Strategy · Operations · Management", bgImage: "/consulting_indonesia.webp" },
 ];
 
 const features = [
-  { icon: ClockArrowUp, title: "Pengembangan Cepat", desc: "Sprint agile 1 minggu dengan demo rutin agar progress selalu terlihat dan Real-Time." },
-  { icon: Shield, title: "Kualitas Terjamin", desc: <>QA otomatis, code review ketat, <br className="hidden md:inline" />Garansi bug 90 hari pasca rilis.</> },
-  { icon: Code2, title: "Source Code Anda", desc: "Anda memiliki 100% source code, dokumentasi lengkap, dan hak intelektual." },
-  { icon: Palette, title: "Desain Premium", desc: "UI/UX kelas dunia oleh tim desainer berpengalaman lintas industri." },
+  { icon: ClockArrowUp, title: "Pengembangan Cepat", desc: "Sprint agile 1 minggu dengan demo rutin agar progress selalu terlihat dan realtime.", bgImage: "/pengembangan_cepat.webp" },
+  { icon: Shield, title: "Kualitas Terjamin", desc: <>Hasil terima rapi,sistem di sempurnakan <br className="hidden md:inline" />Garansi bug 30 hari pasca rilis.</>, bgImage: "/qa_indonesia.webp" },
+  { icon: Code2, title: "Source Code Anda", desc: "Anda memiliki 100% source code, dokumentasi lengkap, dan hak intelektual.", bgImage: "/source_code_indonesia.webp" },
+  { icon: Palette, title: "Desain Premium", desc: "UI/UX global di dukung desainer berpengalaman kelas internasional", bgImage: "/uiux_premium.webp" },
 ];
 
-const plans = [
-  { name: "Starter", price: "1 Jt", desc: "Untuk validasi ide & MVP cepat", features: ["1 platform (Web atau Mobile)", "Hingga 5 halaman / screen", "Desain UI standar", "Garansi 60 hari", "Support database"] },
-  { name: "Pro", price: "5 Jt", desc: "Paling populer untuk bisnis berkembang", features: ["Web + Mobile App", "Hingga 20 screen kustom", "UI/UX premium + animasi", "Integrasi API & database", "Garansi 90 hari", "Support prioritas", "Support Maintenance 1 tahun"], featured: true },
-  { name: "Enterprise", price: "Custom", desc: "Solusi end-to-end skala besar", features: ["Multi-platform (iOS/Android/Web)", "Arsitektur scalable", "Dedicated team", "SLA 99.9%", "Maintenance 1 tahun", "On-site training", "Mode Admin Control System"] },
+const concepts = [
+  {
+    icon: ShoppingCart,
+    title: "E-Commerce & Kasir (POS)",
+    desc: "Aplikasi penjualan modern yang terintegrasi. Dilengkapi dengan manajemen stok real-time, laporan keuangan, scan barcode, dan dukungan multi-cabang.",
+    tags: ["Web", "Mobile", "Desktop"],
+    features: ["Manajemen Stok", "Laporan Keuangan", "Multi-cabang"],
+    bgImage: "/pos_concept.webp"
+  },
+  {
+    icon: School,
+    title: "Sistem Manajemen Terpadu",
+    desc: "Solusi digital untuk operasional sekolah, klinik, maupun perusahaan. Memudahkan administrasi, absensi, hingga rekapitulasi data secara otomatis.",
+    tags: ["Web Apps", "ERP"],
+    features: ["Absensi", "Rekap Data", "Portal Siswa/Pasien"],
+    bgImage: "/academic_concept.webp"
+  },
+  {
+    icon: LayoutTemplate,
+    title: "Company Profile & Landing Page",
+    desc: "Website profesional yang dirancang khusus untuk meningkatkan kredibilitas bisnis Anda, dengan animasi premium dan optimasi SEO tingkat tinggi.",
+    tags: ["Web", "SEO"],
+    features: ["Animasi Premium", "SEO Optimized", "Responsive"],
+    bgImage: "/media_concept.webp"
+  },
+  {
+    icon: CalendarCheck,
+    title: "Aplikasi Booking & Antrean",
+    desc: "Sistem reservasi online yang meminimalkan antrean fisik. Cocok untuk klinik, salon, atau layanan jasa lainnya dengan notifikasi real-time.",
+    tags: ["Mobile", "Web"],
+    features: ["Reservasi Online", "Sistem Antrean Digital", "Jadwal Real-time"],
+    bgImage: "/booking_app.webp"
+  },
+  {
+    icon: Settings,
+    title: "Admin Control System",
+    desc: "Dashboard super admin untuk mengontrol seluruh aktivitas bisnis, metrik performa, dan manajemen pengguna dari satu tempat terpusat.",
+    tags: ["Web Apps", "Dashboard"],
+    features: ["Grafik Metrik", "Manajemen User", "Export Data"],
+    bgImage: "/erp_concept.webp"
+  },
+  {
+    icon: Server,
+    title: "Pembuatan Server Bisnis",
+    desc: "Pembuatan struktur server cloud maupun on-premise yang aman dan handal untuk menyimpan serta mengelola database perusahaan",
+    tags: ["Server", "Database", "VPS"],
+    features: ["Security Setup", "Backup Otomatis", "Load Balancing"],
+    bgImage: "/server_bg2.webp"
+  },
+  {
+    icon: Code,
+    title: "Custom Aplikasi Sesuai Ide",
+    desc: "Punya ide unik yang belum ada di pasaran? Kami siap mewujudkannya dari tahap wireframe hingga menjadi produk nyata yang siap pakai.",
+    tags: ["Custom", "Startups"],
+    features: ["Konsultasi UI/UX", "API Integration", "Scalable"],
+    bgImage: "/medical_concept.webp"
+  },
+  {
+    icon: PenTool,
+    title: "Desain Grafis & UI/UX",
+    desc: "Layanan desain visual yang menarik dan berpusat pada pengguna untuk memperkuat branding perusahaan dan meningkatkan pengalaman interaksi.",
+    tags: ["UI/UX", "Branding"],
+    features: ["Prototyping", "Aset Visual", "Design System"],
+    bgImage: "/desain.webp"
+  },
+  {
+    icon: Globe,
+    title: "Pembuatan Web & Portal",
+    desc: "Pengembangan website berskala besar, portal berita, atau platform komunitas dengan performa tinggi yang dirancang untuk menampung traffic besar.",
+    tags: ["Web", "Portal"],
+    features: ["High Performance", "CMS Terintegrasi", "Responsive"],
+    bgImage: "/001.webp"
+  }
 ];
 
 const testimonials = [
@@ -83,7 +152,7 @@ const TypingHighlight = () => {
 
   const text1 = "Kami merancang, membangun ";
   const text2 = "Aplikasi & Server";
-  const text3 = "Mobile, Web Apps, iOS, Android, Desktop Apps dan Website Modern";
+  const text3 = "Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern";
   const text4 = "siap mengangkat bisnis Anda ke level berikutnya";
   const fullText = text1 + text2 + text3 + text4;
 
@@ -139,16 +208,16 @@ const TypingHighlight = () => {
 
   return (
     <div ref={containerRef} className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
-      <p className="text-xs md:text-lg text-muted-foreground min-h-[1.5rem]">
+      <p className="text-xs md:text-lg font-semibold text-foreground/90 min-h-[1.5rem]">
         {getSub(text1, 0)}
-        {index > end1 && <span className="text-primary font-semibold">{getSub(text2, end1)}</span>}
+        {index > end1 && <span className="text-gradient font-bold">{getSub(text2, end1)}</span>}
         {index < end2 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-sm md:text-xl font-semibold text-foreground my-2 min-h-[1.75rem]">
+      <p className="text-sm md:text-xl font-bold text-foreground my-2 min-h-[1.75rem]">
         {getSub(text3, end2)}
         {index >= end2 && index < end3 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-xs md:text-lg text-muted-foreground min-h-[1.5rem]">
+      <p className="text-xs md:text-lg font-semibold text-foreground/90 min-h-[1.5rem]">
         {getSub(text4, end3)}
         {index >= end3 && index < fullText.length && <span className="animate-pulse">|</span>}
       </p>
@@ -163,10 +232,23 @@ function Index() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentTesti, setCurrentTesti] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pricingScrollRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState('home');
 
-  const isPricingPaused = useRef(false);
-  const lastPricingInteraction = useRef(0);
+  useEffect(() => {
+    const handleScroll = () => {
+      const portofolioSection = document.getElementById('portofolio');
+      if (portofolioSection) {
+        const rect = portofolioSection.getBoundingClientRect();
+        if (rect.top <= 300 && rect.bottom >= 300) {
+          setActiveSection('portofolio');
+        } else {
+          setActiveSection('home');
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isTestimonialPaused = useRef(false);
   const lastTestimonialInteraction = useRef(0);
@@ -187,72 +269,17 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    const slide = (
-      ref: React.RefObject<HTMLDivElement | null>,
-      isPaused: React.MutableRefObject<boolean>,
-      lastInteraction: React.MutableRefObject<number>,
-      disableOnDesktop: boolean = false,
-      originalCount: number = 0
-    ) => {
-      const isDesktop = window.innerWidth >= 768;
-      if (disableOnDesktop && isDesktop) return;
-      if (isPaused.current || Date.now() - lastInteraction.current < 4000) return;
-      if (ref.current) {
-        const { scrollLeft, scrollWidth, clientWidth, children } = ref.current;
-        const scrollAmount = children[0] ? children[0].clientWidth + 24 : clientWidth * 0.85;
-
-        if (originalCount > 0) {
-          const originalWidth = scrollAmount * originalCount;
-
-          if (scrollLeft >= originalWidth - 5) {
-            // Jika sudah terlewat (misal karena user scroll manual), reset instan dulu
-            ref.current.style.scrollSnapType = 'none';
-            ref.current.scrollLeft -= originalWidth;
-            void ref.current.offsetWidth; // force repaint
-            ref.current.style.scrollSnapType = '';
-            ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-          } else {
-            // Scroll normal
-            ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-
-            // Jika setelah scroll ini posisi akan mencapai atau melewati batas akhir original..
-            if (scrollLeft + scrollAmount >= originalWidth - 5) {
-              // Tunggu sampai animasi smooth scroll benar-benar selesai (800ms)
-              // Saat slider sedang diam, lakukan reset posisi (silent reset) tanpa disadari user
-              setTimeout(() => {
-                if (ref.current && ref.current.scrollLeft >= originalWidth - 5) {
-                  ref.current.style.scrollSnapType = 'none';
-                  ref.current.scrollLeft -= originalWidth;
-                  void ref.current.offsetWidth;
-                  ref.current.style.scrollSnapType = '';
-                }
-              }, 800);
-            }
-          }
-          return;
-        }
-
-        // Fallback untuk non-looping
-        if (scrollLeft + clientWidth >= scrollWidth - 10) {
-          ref.current.scrollTo({ left: 0, behavior: 'auto' });
-          return;
-        }
-        ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    };
-
-    const timerPricing = setInterval(() => slide(pricingScrollRef, isPricingPaused, lastPricingInteraction, true, plans.length), 3000);
-
-    return () => {
-      clearInterval(timerPricing);
-    };
-  }, []);
-
-  useEffect(() => {
     if (window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname);
+      const id = window.location.hash.substring(1);
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300); // slight delay to allow rendering
+    } else {
+      window.scrollTo(0, 0);
     }
-    window.scrollTo(0, 0);
   }, []);
 
   const goToSlide = (index: number) => setCurrentSlide(index);
@@ -275,9 +302,9 @@ function Index() {
           </div>
 
           <nav className="hidden lg:flex items-center justify-center gap-8 lg:w-1/3">
-            <Link to="/" className="text-sm font-bold text-primary transition-colors">Home</Link>
-            <Link to="/showcase" className="text-sm font-bold text-foreground/70 hover:text-primary transition-colors">Portofolio</Link>
-            <Link to="/blog" className="text-sm font-bold text-foreground/70 hover:text-primary transition-colors">Blog</Link>
+            <Link to="/" className={`text-sm font-bold transition-colors ${activeSection === 'home' ? 'text-gradient hover:opacity-80' : 'text-foreground/80 hover:text-primary'}`}>Beranda</Link>
+            <a href="#portofolio" className={`text-sm font-bold transition-colors ${activeSection === 'portofolio' ? 'text-gradient hover:opacity-80' : 'text-foreground/80 hover:text-primary'}`}>Konsep</a>
+            <Link to="/blog" className="text-sm font-bold text-foreground/80 hover:text-primary transition-colors">Wawasan</Link>
           </nav>
 
           <div className="flex items-center justify-end lg:w-1/3">
@@ -316,9 +343,9 @@ function Index() {
           <div className="text-xs font-semibold text-gradient uppercase tracking-widest mb-8">Menu Navigasi</div>
 
           <nav className="flex flex-col gap-5 text-center w-full">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-primary transition-all duration-300 hover:scale-105">Home</Link>
-            <Link to="/showcase" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Portofolio</Link>
-            <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Blog</Link>
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className={`font-bold text-lg transition-all duration-300 hover:scale-105 ${activeSection === 'home' ? 'text-gradient hover:opacity-80' : 'text-foreground/80 hover:text-primary'}`}>Beranda</Link>
+            <a href="#portofolio" onClick={() => setIsMobileMenuOpen(false)} className={`font-bold text-lg transition-all duration-300 hover:scale-105 ${activeSection === 'portofolio' ? 'text-gradient hover:opacity-80' : 'text-foreground/80 hover:text-primary'}`}>Konsep</a>
+            <Link to="/blog" onClick={() => setIsMobileMenuOpen(false)} className="font-bold text-lg text-foreground/80 transition-all duration-300 hover:text-primary hover:scale-105">Wawasan</Link>
 
             <div className="w-full h-px bg-border/50 my-2" />
 
@@ -363,9 +390,10 @@ function Index() {
               </div>
             </div>
           </div>
-          <div className="reveal p-2 md:p-8 flex items-center justify-center w-full h-full">
-            <div className="relative float-glow w-full aspect-[16/9] mx-auto mt-8 md:mt-12 mb-8 md:mb-0 group">
-              <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/50 shadow-2xl">
+          <div className="reveal p-2 md:p-8 flex flex-col items-center justify-center w-full h-full">
+            {/* Image Container */}
+            <div className="relative w-full aspect-[16/9] mx-auto mt-8 md:mt-12 group">
+              <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/50">
                 {slides.map((slide, index) => {
                   let positionClass = "translate-x-full opacity-0 z-0";
                   if (index === currentSlide) positionClass = "translate-x-0 opacity-100 z-10";
@@ -381,27 +409,21 @@ function Index() {
                   );
                 })}
               </div>
+            </div>
 
+            {/* Slider Controls (Below Photo) */}
+            <div className="flex items-center justify-between w-full max-w-xs mt-6 mb-8 md:mb-0 gap-4">
               {/* Tombol Navigasi Kiri */}
               <button
                 onClick={prevSlide}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                className="w-10 h-10 shrink-0 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center transition-colors duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer shadow-sm"
                 aria-label="Slide sebelumnya"
               >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-              </button>
-
-              {/* Tombol Navigasi Kanan */}
-              <button
-                onClick={nextSlide}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer"
-                aria-label="Slide selanjutnya"
-              >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5 rotate-180" />
               </button>
 
               {/* Indikator Dot */}
-              <div className="absolute -bottom-6 md:bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              <div className="flex justify-center gap-2">
                 {slides.map((_, index) => (
                   <button
                     key={index}
@@ -413,7 +435,15 @@ function Index() {
                   />
                 ))}
               </div>
-              <div className="absolute -inset-4 -z-10 rounded-3xl opacity-50" style={{ background: "var(--gradient-glow)" }} />
+
+              {/* Tombol Navigasi Kanan */}
+              <button
+                onClick={nextSlide}
+                className="w-10 h-10 shrink-0 rounded-full bg-background/60 backdrop-blur-md border border-border/40 flex items-center justify-center transition-colors duration-300 hover:bg-primary hover:text-primary-foreground cursor-pointer shadow-sm"
+                aria-label="Slide selanjutnya"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -430,7 +460,7 @@ function Index() {
           <div className="flex w-max marquee-track whitespace-nowrap text-2xl font-display font-semibold text-muted-foreground/60">
             {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-6 md:gap-16 pr-6 md:pr-16">
-                {["Javascript", "·", "React", "·", "SwiftUI", "·", "Next.js", "·", "Flutter", "·", "Node.js", "·", "Figma", "·", "AWS", "·", "Firebase", "·", "GitHub", "·", "Supabase", "·", "Canva", "·", "Python", "·"].map((t, j) => (
+                {["Typescript", "·", "React", "·", "SwiftUI", "·", "Next.js", "·", "Flutter", "·", "Node.js", "·", "Figma", "·", "AWS", "·", "Firebase", "·", "GitHub", "·", "Supabase", "·", "Canva", "·", "Python", "·", "Flask", "·", "PostgreSQL", "·", "SQLite", "·", "TailwindCSS", "·", "Vercel", "·"].map((t, j) => (
                   <span key={j}>{t}</span>
                 ))}
               </div>
@@ -442,22 +472,56 @@ function Index() {
       {/* SERVICES */}
       <section id="layanan" className="pt-12 pb-12 px-6">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto">
-          <div className="text-center mb-10 md:mb-16 reveal-up reveal">
-            <div className="text-sm font-semibold text-gradient uppercase tracking-widest mb-3">Layanan Kami</div>
+          <div className="text-center mt-6 md:mt-8 mb-10 md:mb-16 reveal-up reveal">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Layanan <span className="text-gradient">Unggulan</span> Kami</h2>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-foreground/90 font-medium max-w-2xl mx-auto">
               Kami menyediakan solusi digital front-to-end <br className="md:hidden" /> untuk kebutuhan bisnis Anda.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s, i) => (
-              <div key={s.title} className={`glass-card rounded-2xl p-6 ${i % 2 ? "reveal" : "reveal-ltr reveal"}`} style={{ animationDelay: `${i * 100}ms` }}>
-                <div className="mb-5">
-                  <s.icon className="w-8 h-8 text-primary" />
+              <div key={s.title} className={`relative group glass-card rounded-2xl px-4 py-6 sm:p-6 md:p-8 flex flex-col justify-between items-start overflow-hidden min-h-[360px] md:min-h-[320px] ${i % 2 ? "reveal" : "reveal-ltr reveal"}`} style={{ animationDelay: `${i * 100}ms` }}>
+
+                {/* Background Image of the Card */}
+                <div className="absolute inset-0 z-0 bg-black">
+                  <img
+                    src={s.bgImage}
+                    alt={s.title}
+                    className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 pointer-events-none"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-700 pointer-events-none" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{s.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground mb-4">{s.desc}</p>
-                <div className="text-xs font-medium text-primary/80">{s.tag}</div>
+
+                <div className="w-full relative z-10 flex flex-col h-full">
+                  {/* Number (Top Right) */}
+                  <div className="flex justify-end items-start w-full mb-2">
+                    <span className="text-4xl font-extrabold text-foreground/10 font-display select-none group-hover:text-foreground/30 transition-colors drop-shadow-md">
+                      {`0${i + 1}`}
+                    </span>
+                  </div>
+
+                  {/* Content (Vertically centered) */}
+                  <div className="my-auto flex flex-col items-center text-center w-full">
+                    {/* Title */}
+                    <h3 className="text-xl md:text-2xl font-bold text-foreground font-display mb-3 flex items-center justify-center gap-2 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                      <span>{s.title}</span>
+                    </h3>
+
+                    {/* Desc */}
+                    <p className="w-full text-[12px] sm:text-[13px] md:text-sm tracking-tight leading-relaxed text-foreground font-semibold drop-shadow-[0_4px_6px_rgba(0,0,0,1)] mb-5">
+                      {s.desc}
+                    </p>
+                  </div>
+
+                  {/* Category Badge (Bottom) */}
+                  <div className="flex justify-center mt-auto">
+                    <span className="text-[10px] uppercase font-bold text-foreground/80 tracking-wider bg-background/50 backdrop-blur-md border border-border/30 px-2.5 py-1 rounded-md drop-shadow-md">
+                      {s.tag}
+                    </span>
+                  </div>
+                </div>
+
               </div>
             ))}
           </div>
@@ -467,68 +531,102 @@ function Index() {
       {/* WHY US */}
       <section id="kenapa" className="pt-12 pb-12 px-6 relative">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto grid lg:grid-cols-2 gap-10 md:gap-16 items-stretch">
-          <div className="reveal-ltr reveal glass-card p-6 md:p-12 rounded-3xl flex flex-col justify-center h-full">
-            <div className="text-sm font-semibold text-gradient uppercase tracking-widest mb-3">Mengapa Memilih Kami</div>
-            <h2 className="text-[34px] md:text-[39px] leading-tight font-bold mb-6">Lebih dari sekadar <span className="text-gradient">developer</span><br></br>kami partner pertumbuhan Anda.</h2>
-            <p className="text-xs md:text-sm text-muted-foreground mb-8">
-              Kami memahami bahwa aplikasi yang hebat bukan hanya soal kode saja,<br />
-              tapi soal eksekusi, strategi,serta detail aplikasi
-            </p>
-            <Link to="/showcase" className="btn-primary">Lihat Semua<ChevronRight className="w-4 h-4" /></Link>
+          <div className="relative group reveal-ltr reveal glass-card p-6 md:p-12 rounded-3xl flex flex-col justify-center h-full overflow-hidden">
+            {/* Background Image */}
+            <div className="absolute inset-0 z-0 bg-black">
+              <img
+                src="/why_us_bg.webp"
+                alt="Mengapa Memilih Kami"
+                className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 pointer-events-none"
+              />
+              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors duration-700 pointer-events-none" />
+            </div>
+
+            <div className="relative z-10 max-w-xl">
+              <h2 className="text-[34px] md:text-[39px] leading-tight font-bold mb-6 text-foreground drop-shadow-lg">
+                Lebih dari sekadar <span className="text-gradient">developer</span><br></br>kami partner pertumbuhan Anda.
+              </h2>
+              <p className="text-sm md:text-base text-foreground font-semibold mb-8 drop-shadow-md">
+                Kami memahami bahwa aplikasi yang hebat bukan hanya soal kode saja,<br className="hidden md:inline" />
+                tapi soal detail, fungsi, serta eksekusi penggunaan user friendly.
+              </p>
+
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-5">
             {features.map((f, i) => (
-              <div key={f.title} className="glass-card rounded-2xl p-6 reveal h-full flex flex-col" style={{ animationDelay: `${i * 80}ms` }}>
-                <f.icon className="w-8 h-8 text-primary mb-3" />
-                <h3 className="text-sm font-semibold mb-1">{f.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{f.desc}</p>
+              <div key={f.title} className="glass-card rounded-2xl p-6 reveal h-full flex flex-col relative group overflow-hidden" style={{ animationDelay: `${i * 80}ms` }}>
+                {f.bgImage && (
+                  <div className="absolute inset-0 z-0 bg-black">
+                    <img
+                      src={f.bgImage}
+                      alt={f.title}
+                      className="w-full h-full object-cover opacity-70 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 pointer-events-none"
+                    />
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors duration-700 pointer-events-none" />
+                  </div>
+                )}
+                <div className="relative z-10 flex flex-col h-full justify-center my-auto">
+                  <h3 className={`text-base font-bold mb-2 ${f.bgImage ? 'text-foreground drop-shadow-lg' : ''}`}>{f.title}</h3>
+                  <p className={`text-[13px] md:text-sm tracking-tight leading-relaxed ${f.bgImage ? 'text-foreground/90 font-semibold drop-shadow-[0_4px_6px_rgba(0,0,0,1)]' : 'text-muted-foreground'}`}>{f.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="harga" className="pt-12 pb-24 px-6">
-        <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto">
-          <div className="text-center mb-10 md:mb-16 reveal-up reveal">
-            <div className="text-sm font-semibold text-gradient uppercase tracking-widest mb-3">Paket Harga</div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="md:hidden">Pilihan Paket</span>
-              <span className="hidden md:inline">Pilihan Paket</span>
-            </h2>
-          </div>
-          <div
-            ref={pricingScrollRef}
-            className="flex flex-row md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none pb-4 pt-4 -mt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            onMouseEnter={() => isPricingPaused.current = true}
-            onMouseLeave={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
-            onTouchStart={(e) => { isPricingPaused.current = true; lastPricingInteraction.current = Date.now(); }}
-            onTouchMove={(e) => lastPricingInteraction.current = Date.now()}
-            onTouchEnd={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
-            onTouchCancel={() => { isPricingPaused.current = false; lastPricingInteraction.current = Date.now(); }}
-          >
-            {[...plans, ...plans, ...plans, ...plans].map((p, i) => (
-              <div key={`${p.name}-${i}`} className={`glass-card rounded-2xl p-8 relative flex flex-col items-center text-center w-[85vw] md:w-auto shrink-0 snap-center md:snap-align-none ${p.featured ? "ring-2 ring-primary/60" : ""} ${i === 0 ? "reveal-ltr reveal" : "reveal"} ${i >= plans.length ? "hidden md:hidden max-md:flex" : ""}`} style={{ animationDelay: `${(i % plans.length) * 120}ms` }}>
-                {p.featured && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap" style={{ background: "var(--gradient-primary)", color: "var(--primary-foreground)" }}>Paling Populer</div>}
-                <h3 className="text-xl font-semibold mb-1">{p.name}</h3>
-                <p className="text-sm text-muted-foreground mb-6">{p.desc}</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-display font-bold text-gradient">Rp {p.price}</span>
-                  <span className="text-muted-foreground text-sm"> /proyek</span>
+      {/* CONCEPTS GRID */}
+      <section id="portofolio" className="scroll-mt-20 mt-4 md:mt-10 pt-12 pb-24 px-6 relative z-10">
+        <div className="text-center mb-10 md:mb-16 reveal-up reveal">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="md:hidden">Konsep <span className="text-gradient">Aplikasi</span></span>
+            <span className="hidden md:inline">Konsep <span className="text-gradient">Aplikasi</span> & Sistem</span>
+          </h2>
+        </div>
+        <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {concepts.map((c, i) => (
+            <div key={c.title} className="glass-card rounded-2xl p-8 reveal flex flex-col h-full relative group overflow-hidden" style={{ animationDelay: `${(i % 3) * 100}ms` }}>
+              {c.bgImage && (
+                <div className="absolute inset-0 z-0 bg-black">
+                  <img
+                    src={c.bgImage}
+                    alt={c.title}
+                    className="w-full h-full object-cover opacity-70 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 pointer-events-none"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors duration-700 pointer-events-none" />
                 </div>
-                <ul className="space-y-3 mb-8 w-fit text-left">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                      <span className="text-muted-foreground">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a href={`https://wa.me/6283867180887?text=halo,saya%20tertarik%20ingin%20membuat%20aplikasi%0Apaket%20yg%20saya%20butuhkan%20adalah%20paket%20${p.name.toLowerCase()}%0A%0Asaya%20tertarik%20setelah%20melihat%20web%20ini%0A%0A%0Ahttps://www.elproject.studio`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center mt-auto">Pilih Paket</a>
+              )}
+
+              <div className="relative z-10 flex flex-col h-full">
+                <h3 className="text-xl font-bold mb-3 drop-shadow-md">{c.title}</h3>
+                <p className="text-sm font-semibold leading-relaxed text-foreground/90 mb-6 flex-grow drop-shadow-md">{c.desc}</p>
+
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {c.tags.map(tag => (
+                      <span key={tag} className="text-[10px] font-semibold px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white uppercase tracking-wider shadow-sm">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="border-t border-border/40 pt-4">
+                    <ul className="space-y-2">
+                      {c.features.map(f => (
+                        <li key={f} className="flex items-center gap-2 text-xs text-foreground/90 font-semibold">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center mt-10 md:mt-16 reveal-up reveal">
+          <a href="/blog" className="btn-primary w-fit">Lihat Wawasan<ChevronRight className="w-4 h-4" /></a>
         </div>
       </section>
 
@@ -536,8 +634,7 @@ function Index() {
       <section id="testimoni" className="pt-12 pb-12 px-6">
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto">
           <div className="text-center mb-10 md:mb-16 reveal-up reveal">
-            <div className="text-sm font-semibold text-gradient uppercase tracking-widest mb-3">Testimoni</div>
-            <h2 className="text-4xl md:text-5xl font-bold">Dipercaya oleh Owner & Perusahaan</h2>
+            <h2 className="text-4xl md:text-5xl font-bold">Dipercaya oleh <span className="text-gradient">Owner</span> & Perusahaan</h2>
           </div>
           <div
             className="relative w-full max-w-lg md:max-w-none mx-auto h-[220px] md:h-[220px]"
@@ -591,19 +688,29 @@ function Index() {
 
       {/* CTA */}
       <section id="kontak" className="pt-12 pb-12 px-6">
-        <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto glass-card rounded-3xl px-6 py-12 md:p-16 text-center relative overflow-hidden reveal-up reveal">
-          <div className="absolute inset-0 -z-10 opacity-60" style={{ background: "var(--gradient-glow)" }} />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Siap membangun <span className="text-gradient">sesuatu yang hebat?</span></h2>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Ceritakan ide Anda
-            <span className="hidden md:inline"> — </span><br className="md:hidden" />
-            konsultasi 100% gratis
-            <span className="hidden md:inline"> — </span><br className="md:hidden" />
-            Kami balas dalam 24 jam.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=elproject.dev@gmail.com" target="_blank" rel="noopener noreferrer" className="btn-primary">elproject@studio.id <ChevronRight className="w-4 h-4" /></a>
-            <a href="https://wa.me/6283867180887?text=halo,saya%20ingin%20menanyakan%20pembuatan%20aplikasi,%0Asepertinya%20saya%20tertarik%20setelah%20melihat%20web%20ini.%0A%0A%0Ahttps://www.elproject.studio" target="_blank" rel="noopener noreferrer" className="btn-ghost">Chat WhatsApp</a>
+        <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto glass-card rounded-3xl px-6 py-12 md:p-16 text-center relative overflow-hidden reveal-up reveal group border border-border/50 shadow-2xl">
+          <div className="absolute inset-0 -z-10 bg-black">
+            <img
+              src="/colorwall.webp"
+              alt="ColorWall background"
+              className="w-full h-full object-cover opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-black/60 group-hover:bg-black/30 transition-colors duration-700 pointer-events-none" />
+          </div>
+
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 drop-shadow-md">Siap membangun <span className="text-gradient">sesuatu yang hebat?</span></h2>
+            <p className="text-foreground/90 font-medium mb-8 max-w-2xl mx-auto drop-shadow-sm">
+              Ceritakan ide Anda
+              <span className="hidden md:inline"> — </span><br className="md:hidden" />
+              Konsultasi gratis
+              <span className="hidden md:inline"> — </span><br className="md:hidden" />
+              Kami balas secepatnya
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center relative z-20">
+              <a href="https://mail.google.com/mail/?view=cm&fs=1&to=elproject.dev@gmail.com" target="_blank" rel="noopener noreferrer" className="btn-primary shadow-[0_0_15px_var(--color-primary)]">elproject@studio.id <ChevronRight className="w-4 h-4" /></a>
+              <a href="https://wa.me/6283867180887?text=halo,saya%20ingin%20menanyakan%20pembuatan%20aplikasi,%0Asepertinya%20saya%20tertarik%20setelah%20melihat%20web%20ini.%0A%0A%0Ahttps://www.elproject.studio" target="_blank" rel="noopener noreferrer" className="btn-ghost bg-background/50 backdrop-blur-sm border-white/10 hover:bg-white/10">Chat WhatsApp</a>
+            </div>
           </div>
         </div>
       </section>

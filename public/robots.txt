@@ -1,4 +1,78 @@
+# robots.txt — EL Project
+# Izinkan Google Search + AI crawlers untuk memperluas jangkauan
+
 User-agent: *
 Allow: /
 
+# ── AI & Search crawlers (explicit allow) ──
+# OpenAI / ChatGPT
+User-agent: GPTBot
+Allow: /
+
+# ChatGPT browsing
+User-agent: ChatGPT-User
+Allow: /
+
+# Google Gemini AI
+User-agent: Google-Extended
+Allow: /
+
+# Google Search
+User-agent: Googlebot
+Allow: /
+
+# Bing / Copilot
+User-agent: Bingbot
+Allow: /
+
+# Anthropic Claude
+User-agent: anthropic-ai
+Allow: /
+
+# Claude crawler
+User-agent: ClaudeBot
+Allow: /
+
+# Claude web
+User-agent: Claude-Web
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# ByteDance AI
+User-agent: Bytespider
+Allow: /
+
+# Common Crawl
+User-agent: CCBot
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+
+# Meta AI
+User-agent: meta-externalagent
+Allow: /
+
+# Facebook / Meta
+User-agent: FacebookBot
+Allow: /
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+
+# You.com
+User-agent: YouBot
+Allow: /
+
+# Blokir path sensitif
+User-agent: *
+Disallow: /api/private
+Disallow: /admin
+
 Sitemap: https://www.elproject.studio/sitemap.xml
+# LLMs: https://www.elproject.studio/llms.txt

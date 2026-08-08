@@ -31,3 +31,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel/output
+
+# SEO expand script output & backups
+seo-output/
+public/robots.txt.bak
+public/llms.txt.bak
