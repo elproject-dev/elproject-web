@@ -109,14 +109,14 @@ const concepts = [
 ];
 
 const testimonials = [
-  { name: "Sbagiamu Coffee", role: "Pengusaha", text: <>Mantaplah pokoknya. Bikin aplikasi kasir eksekusi rapi, garapanya cepat, cocok nih sesuai konsep bisa mengelola banyak cabang...</> },
+  { name: "Sbagiamu Coffee", role: "Pengusaha", text: <strong>Mantaplah pokoknya. Bikin aplikasi kasir eksekusi rapi, garapanya cepat, cocok nih sesuai konsep bisa mengelola banyak cabang...</strong> },
   {
-    name: "Sinter Pamong", role: "Pengelola Sekolah", text: <>Desainnya bagus, harganya jg termasuk murah sih! Overall saya puas lihat hasilnya, <br></br> Next saya ajukan ke kepala sekolah lagi</>
+    name: "Sinter Pamong", role: "Pengelola Sekolah", text: <strong>Desainnya bagus, harganya jg termasuk murah sih! Overall saya puas lihat hasilnya, <br></br> Next saya ajukan ke kepala sekolah lagi</strong>
   },
-  { name: "KPKN Grobogan", role: "Staff PK3", text: <>Lagi iseng cari2 orang yang bisa buat sistem antrean<br />ee malah ketemu mas ini.. ternyata diluar ekpetasi.<br />Joss gandos top markotop garapanmu mas...</> },
-  { name: "Kantong Mas", role: "Pengusaha", text: <>Orangnya teliti,Sabar,Dan bisa di andalkan <br />Bintang 5 lah buat developer ini<br />Terima kasih</> },
-  { name: "CV.Aulia Usaha", role: "Pengusaha", text: <>Dapat rekomendasi dari temenku<br />gak nyangka sebagus itu<br />jangan ragu pesan aplikasi sama mas ini...</> },
-  { name: "Kandang Biru", role: "Pengusaha", text: <>Lumayan lah daripada Langganan bulanan<br />Aplikasinya User-friendly banget <br />biasanya Aplikasi pada ribet ini mah enggak!</>, rating: 4 },
+  { name: "KPKN Grobogan", role: "Staff PK3", text: <strong>Lagi iseng cari2 orang yang bisa buat sistem antrean<br />ee malah ketemu mas ini.. ternyata diluar ekpetasi.<br />Joss gandos top markotop garapanmu mas...</strong> },
+  { name: "Kantong Mas", role: "Pengusaha", text: <strong>Orangnya teliti,Sabar,Dan bisa di andalkan <br />Bintang 5 lah buat developer ini<br />Terima kasih</strong> },
+  { name: "CV.Aulia Usaha", role: "Pengusaha", text: <strong>Dapat rekomendasi dari temenku<br />gak nyangka sebagus itu<br />jangan ragu pesan aplikasi sama mas ini...</strong> },
+  { name: "Kandang Biru", role: "Pengusaha", text: <strong>Lumayan lah daripada Langganan bulanan<br />Aplikasinya User-friendly banget <br />biasanya Aplikasi pada ribet ini mah enggak!</strong>, rating: 4 },
 ];
 
 const AnimatedCounter = ({ end, suffix = "", decimals = 0 }: { end: number, suffix?: string, decimals?: number }) => {
@@ -674,8 +674,8 @@ function Index() {
                   </div>
                   <p className="text-xs md:text-sm text-foreground/90 mb-6 flex-grow">{t.text}</p>
                   <div className="mt-auto">
-                    <div className="text-sm md:text-base font-semibold">{t.name}</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">{t.role}</div>
+                    <div className="text-sm md:text-base font-semibold text-purple-500">{t.name}</div>
+                    <div className="text-xs md:text-sm text-muted-foreground font-bold">{t.role}</div>
                   </div>
                 </div>
               );
