@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Globe, MonitorSmartphone, Server, Search, PenTool, LineChart, ChevronRight, Gem, Rocket, Shield, Code2, Check, Star, Menu, X, Palette, ClockArrowUp, Paintbrush, Figma, Layers, ArrowUpRight, ShoppingCart, School, LayoutTemplate, CalendarCheck, Settings, Code } from "lucide-react";
+import { Globe, MonitorSmartphone, Server, Search, PenTool, LineChart, ChevronRight, Gem, Rocket, Shield, Code2, Check, Star, Menu, X, Palette, ClockArrowUp, Paintbrush, Layers, ArrowUpRight, ShoppingCart, School, LayoutTemplate, CalendarCheck, Settings, Code } from "lucide-react";
 import { LuPaintbrushVertical } from "react-icons/lu";
 import { useReveal } from "@/hooks/use-reveal";
 
@@ -52,7 +52,7 @@ const concepts = [
   },
   {
     icon: LayoutTemplate,
-    title: "Company Profile & Landing Page",
+    title: "Company & Landing Page",
     desc: "Website profesional yang dirancang khusus untuk meningkatkan kredibilitas bisnis Anda, dengan animasi premium dan optimasi SEO tingkat tinggi.",
     tags: ["Web", "SEO"],
     features: ["Animasi Premium", "SEO Optimized", "Responsive"],
@@ -208,16 +208,16 @@ const TypingHighlight = () => {
 
   return (
     <div ref={containerRef} className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
-      <p className="text-xs md:text-lg font-semibold text-foreground/90 min-h-[1.5rem]">
+      <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
         {getSub(text1, 0)}
         {index > end1 && <span className="text-gradient font-bold">{getSub(text2, end1)}</span>}
         {index < end2 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-sm md:text-xl font-bold text-foreground my-2 min-h-[1.75rem]">
+      <p className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
         {getSub(text3, end2)}
         {index >= end2 && index < end3 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-xs md:text-lg font-semibold text-foreground/90 min-h-[1.5rem]">
+      <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
         {getSub(text4, end3)}
         {index >= end3 && index < fullText.length && <span className="animate-pulse">|</span>}
       </p>
@@ -269,7 +269,15 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (window.location.hash) {
+    const navEntries = window.performance.getEntriesByType('navigation');
+    const isReload = navEntries.length > 0 && (navEntries[0] as any).type === 'reload';
+
+    if (isReload) {
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      window.scrollTo(0, 0);
+    } else if (window.location.hash) {
       const id = window.location.hash.substring(1);
       setTimeout(() => {
         const el = document.getElementById(id);
@@ -474,7 +482,7 @@ function Index() {
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto">
           <div className="text-center mt-6 md:mt-8 mb-10 md:mb-16 reveal-up reveal">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Layanan <span className="text-gradient">Unggulan</span> Kami</h2>
-            <p className="text-base md:text-lg text-foreground/90 font-medium max-w-2xl mx-auto">
+            <p className="text-sm md:text-xl font-semibold text-foreground/90 max-w-2xl mx-auto">
               Kami menyediakan solusi digital front-to-end <br className="md:hidden" /> untuk kebutuhan bisnis Anda.
             </p>
           </div>
@@ -546,7 +554,7 @@ function Index() {
               <h2 className="text-[34px] md:text-[39px] leading-tight font-bold mb-6 text-foreground drop-shadow-lg">
                 Lebih dari sekadar <span className="text-gradient">developer</span><br></br>kami partner pertumbuhan Anda.
               </h2>
-              <p className="text-sm md:text-base text-foreground font-semibold mb-8 drop-shadow-md">
+              <p className="text-xs md:text-sm text-foreground font-semibold mb-8 drop-shadow-md">
                 Kami memahami bahwa aplikasi yang hebat bukan hanya soal kode saja,<br className="hidden md:inline" />
                 tapi soal detail, fungsi, serta eksekusi penggunaan user friendly.
               </p>
@@ -599,8 +607,8 @@ function Index() {
               )}
 
               <div className="relative z-10 flex flex-col h-full">
-                <h3 className="text-xl font-bold mb-3 drop-shadow-md">{c.title}</h3>
-                <p className="text-sm font-semibold leading-relaxed text-foreground/90 mb-6 flex-grow drop-shadow-md">{c.desc}</p>
+                <h3 className="text-xl font-bold mb-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{c.title}</h3>
+                <p className="text-sm font-semibold leading-relaxed text-foreground mb-6 flex-grow drop-shadow-[0_4px_6px_rgba(0,0,0,1)]">{c.desc}</p>
 
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
@@ -700,7 +708,7 @@ function Index() {
 
           <div className="relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 drop-shadow-md">Siap membangun <span className="text-gradient">sesuatu yang hebat?</span></h2>
-            <p className="text-foreground/90 font-medium mb-8 max-w-2xl mx-auto drop-shadow-sm">
+            <p className="text-sm md:text-xl font-semibold text-foreground/90 mb-8 max-w-2xl mx-auto drop-shadow-sm">
               Ceritakan ide Anda
               <span className="hidden md:inline"> — </span><br className="md:hidden" />
               Konsultasi gratis
