@@ -723,6 +723,47 @@ function Index() {
         </div>
       </section>
 
+      {/* SEO CONTENT BLOCK */}
+      <section className="sr-only">
+        <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto text-sm text-muted-foreground/80 space-y-6">
+          <div>
+            <h2 className="text-lg font-bold text-foreground/90 mb-2 drop-shadow-sm">Jasa Buat Aplikasi Mobile & Website Profesional</h2>
+            <p className="leading-relaxed">
+              Di era digital saat ini, memiliki platform digital yang andal adalah keharusan. EL Project menyediakan <strong>jasa buat aplikasi</strong> terbaik untuk kebutuhan bisnis Anda. Mulai dari <strong>aplikasi kasir (POS)</strong>, <strong>sistem ERP</strong>, hingga <strong>aplikasi booking dan antrean</strong>. Tim kami terdiri dari developer berpengalaman yang siap memberikan solusi pengembangan <strong>aplikasi mobile Android dan iOS</strong> yang responsif, cepat, dan <em>user-friendly</em>.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground/90 mb-2 drop-shadow-sm">Mengapa Memilih Jasa Pembuatan Aplikasi Kami?</h2>
+            <p className="leading-relaxed">
+              Kami tidak sekadar menulis kode, tetapi merancang solusi dari depan ke belakang (<em>front-to-end</em>). Layanan <strong>jasa pembuatan aplikasi mobile</strong> kami mencakup UI/UX premium, integrasi CMS, optimasi server, hingga perawatan berkelanjutan. Baik Anda mencari <strong>jasa pembuatan website</strong> perusahaan, <strong>sistem manajemen terpadu</strong>, maupun <strong>aplikasi kasir</strong> untuk mengelola banyak cabang, kami siap menjadi partner teknologi Anda untuk tumbuh dan bersaing di pasar modern.
+            </p>
+            <p>
+              Layanan kami dirancang untuk membantu bisnis Anda berkembang dengan teknologi yang efisien dan modern. Dengan pengalaman puluhan proyek, tim kami siap menghadirkan solusi terbaik yang disesuaikan dengan kebutuhan spesifik bisnis Anda.
+            </p>
+            <p>
+              Tim kami terdiri dari developer berpengalaman yang berdedikasi tinggi untuk memberikan hasil terbaik. Kami memahami bahwa setiap bisnis memiliki kebutuhan unik, sehingga kami menawarkan solusi yang dapat disesuaikan untuk memastikan kesuksesan proyek Anda.
+            </p>
+            <p>
+              Kami menawarkan berbagai macam layanan pembuatan aplikasi, termasuk <strong>aplikasi kasir (POS)</strong>, <strong>sistem ERP</strong>, <strong>aplikasi booking dan antrean</strong>, serta <strong>aplikasi mobile Android dan iOS</strong>. Setiap proyek dikerjakan dengan standar kualitas tertinggi untuk memastikan performa optimal dan pengalaman pengguna terbaik.
+            </p>
+            <p>
+              Dengan komitmen kami terhadap kualitas, transparansi, dan layanan pelanggan yang unggul, EL Project telah menjadi pilihan utama bagi bisnis yang mencari solusi digital andal. Tim kami selalu mengikuti perkembangan teknologi terbaru untuk memastikan bahwa aplikasi yang kami bangun tidak hanya memenuhi kebutuhan saat ini, tetapi juga siap untuk pertumbuhan bisnis di masa depan.
+            </p>
+            <p>
+              Sebagai penyedia <strong>jasa pembuatan aplikasi custom</strong> dan <strong>jasa pembuatan website perusahaan</strong> terbaik, EL Project melayani segala kebutuhan digitalisasi untuk <strong>bisnis skala kecil (UMKM), menengah, hingga besar (enterprise)</strong>. Kami dikenal luas sebagai pakar terpercaya untuk <strong>layanan jasa pembuatan aplikasi di Yogyakarta</strong> yang telah menjangkau klien di seluruh pelosok Nusantara. Layanan unggulan kami meliputi <strong>jasa pembuatan sistem ERP</strong>, <strong>jasa pembuatan aplikasi kasir (POS)</strong>, <strong>aplikasi booking dan antrean</strong>, serta <strong>jasa pembuatan aplikasi mobile Android dan iOS</strong>. Layanan <strong>jasa pembuatan website dan aplikasi</strong> kami secara penuh mendukung klien dari area <strong>Yogyakarta (Jogja), Solo, Magelang, Wonosobo, Purwokerto, Purbalingga, Cilacap, Tegal, Sragen, Semarang, Bandung, Jakarta, Surabaya, Bali, Medan, Lampung, Palembang, Pontianak, Palangkaraya, Samarinda, Balikpapan, Makassar, Gorontalo, Maluku, Kupang, Timor Leste, Sorong, hingga Jayapura (Papua)</strong>. Dengan dedikasi penuh pada kualitas UI/UX premium dan optimasi performa tinggi, kami memastikan setiap proyek dieksekusi dengan presisi mutlak untuk mendukung kesuksesan digital bisnis Anda.
+            </p>
+            <p>kami menawarkan jasa pembuatan aplikasi <strong>sistem antrean</strong> dan juga layanan jasa pembuatan aplikasi <strong>absensi</strong></p>
+
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground/90 mb-2 drop-shadow-sm">Layanan Jasa Pembuatan Aplikasi Seluruh Indonesia</h2>
+            <p className="leading-relaxed">
+              EL Project melayani <strong>jasa pembuatan aplikasi</strong> untuk klien di <strong>seluruh Indonesia</strong>. Di mana pun bisnis Anda berlokasi, mulai dari <strong>Jakarta, Surabaya, Bandung, Semarang, Yogyakarta (Jogja), Medan, Makassar, Bali, hingga Balikpapan dan kota lainnya</strong>, tim kami siap membantu Anda. Kami menangani proyek pembuatan aplikasi skala kecil hingga enterprise secara profesional.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <footer className="border-t border-border/40 py-8 px-6 text-center text-[10px] md:text-xs text-muted-foreground transition-all duration-300 hover:text-primary hover:drop-shadow-[0_0_8px_var(--color-primary)] cursor-default">
         © 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS © 2026
       </footer>
