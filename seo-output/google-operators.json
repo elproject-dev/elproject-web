@@ -1,0 +1,74 @@
+[
+  {
+    "label": "Semua halaman terindex",
+    "query": "site:www.elproject.studio",
+    "purpose": "Cek berapa URL yang sudah diindex Google",
+    "url": "https://www.google.com/search?q=site%3Awww.elproject.studio&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Brand mention di web lain",
+    "query": "\"EL Project\" OR \"elproject.studio\" -site:www.elproject.studio",
+    "purpose": "Backlink & mention di luar domain",
+    "url": "https://www.google.com/search?q=%22EL+Project%22+OR+%22elproject.studio%22+-site%3Awww.elproject.studio&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Judul mengandung brand",
+    "query": "intitle:\"EL Project\" OR intitle:\"elproject\"",
+    "purpose": "Brand di title SERP",
+    "url": "https://www.google.com/search?q=intitle%3A%22EL+Project%22+OR+intitle%3A%22elproject%22&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "URL mengandung brand",
+    "query": "inurl:elproject",
+    "purpose": "Subdomain / mirror / mention di URL",
+    "url": "https://www.google.com/search?q=inurl%3Aelproject&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Kompetitor lokal",
+    "query": "\"jasa pembuatan aplikasi\" Yogyakarta -site:www.elproject.studio",
+    "purpose": "Pantau SERP kompetitor",
+    "url": "https://www.google.com/search?q=%22jasa+pembuatan+aplikasi%22+Yogyakarta+-site%3Awww.elproject.studio&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Blog terindex",
+    "query": "site:www.elproject.studio/blog",
+    "purpose": "Pastikan artikel blog terindex",
+    "url": "https://www.google.com/search?q=site%3Awww.elproject.studio%2Fblog&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Showcase terindex",
+    "query": "site:www.elproject.studio/showcase",
+    "purpose": "Pastikan portofolio terindex",
+    "url": "https://www.google.com/search?q=site%3Awww.elproject.studio%2Fshowcase&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Cache homepage",
+    "query": "cache:www.elproject.studio",
+    "purpose": "Versi cache Google terakhir",
+    "url": "https://www.google.com/search?q=cache%3Awww.elproject.studio&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Related sites",
+    "query": "related:www.elproject.studio",
+    "purpose": "Situs serupa menurut Google",
+    "url": "https://www.google.com/search?q=related%3Awww.elproject.studio&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "File dokumen",
+    "query": "site:www.elproject.studio filetype:pdf OR filetype:doc",
+    "purpose": "Aset dokumen terindex",
+    "url": "https://www.google.com/search?q=site%3Awww.elproject.studio+filetype%3Apdf+OR+filetype%3Adoc&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "AI Overview target",
+    "query": "berapa biaya jasa pembuatan aplikasi Yogyakarta",
+    "purpose": "Target featured snippet & AI Overview",
+    "url": "https://www.google.com/search?q=berapa+biaya+jasa+pembuatan+aplikasi+Yogyakarta&num=20&hl=id&gl=id"
+  },
+  {
+    "label": "Software house jogja",
+    "query": "software house yogyakarta OR \"software house jogja\"",
+    "purpose": "Keyword kategori lokal",
+    "url": "https://www.google.com/search?q=software+house+yogyakarta+OR+%22software+house+jogja%22&num=20&hl=id&gl=id"
+  }
+]
