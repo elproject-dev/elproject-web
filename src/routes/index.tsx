@@ -240,7 +240,9 @@ function Index() {
       const portofolioSection = document.getElementById('portofolio');
       if (portofolioSection) {
         const rect = portofolioSection.getBoundingClientRect();
-        if (rect.top <= 300 && rect.bottom >= 300) {
+        // Jika top <= 300, berarti kita sudah sampai di section portofolio atau melewatinya.
+        // Tetap set 'portofolio' sampai halaman akhir.
+        if (rect.top <= 300) {
           setActiveSection('portofolio');
         } else {
           setActiveSection('home');
