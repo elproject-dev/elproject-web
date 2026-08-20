@@ -83,14 +83,6 @@ const concepts = [
     bgImage: "/server_bg2.webp"
   },
   {
-    icon: Code,
-    title: "Custom Aplikasi Sesuai Ide",
-    desc: "Punya ide unik yang belum ada di pasaran? Kami siap mewujudkannya dari tahap wireframe hingga menjadi produk nyata yang siap pakai.",
-    tags: ["Custom", "Startups"],
-    features: ["Konsultasi UI/UX", "API Integration", "Scalable"],
-    bgImage: "/medical_concept.webp"
-  },
-  {
     icon: PenTool,
     title: "Desain Grafis & UI/UX",
     desc: "Layanan desain visual yang menarik dan berpusat pada pengguna untuk memperkuat branding perusahaan dan meningkatkan pengalaman interaksi.",
@@ -105,6 +97,14 @@ const concepts = [
     tags: ["Web", "Portal"],
     features: ["High Performance", "CMS Terintegrasi", "Responsive"],
     bgImage: "/001.webp"
+  },
+  {
+    icon: Code,
+    title: "Custom Aplikasi Sesuai Ide",
+    desc: "Punya ide unik yang belum ada di pasaran? Kami siap mewujudkannya dari tahap wireframe hingga menjadi produk nyata yang siap pakai.",
+    tags: ["Custom", "Startups"],
+    features: ["Konsultasi UI/UX", "API Integration", "Scalable"],
+    bgImage: "/medical_concept.webp"
   }
 ];
 
@@ -468,7 +468,7 @@ function Index() {
           <div className="flex w-max marquee-track whitespace-nowrap text-2xl font-display font-semibold text-muted-foreground/60">
             {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-6 md:gap-16 pr-6 md:pr-16">
-                {["Typescript", "·", "React", "·", "SwiftUI", "·", "Next.js", "·", "Flutter", "·", "Node.js", "·", "Figma", "·", "AWS", "·", "Firebase", "·", "GitHub", "·", "Supabase", "·", "Canva", "·", "Python", "·", "Flask", "·", "PostgreSQL", "·", "SQLite", "·", "TailwindCSS", "·", "Vercel", "·"].map((t, j) => (
+                {["Typescript", "·", "React", "·", "SwiftUI", "·", "Next.js", "·", "Flutter", "·", "Node.js", "·", "Figma", "·", "AWS", "·", "Firebase", "·", "GitHub", "·", "Supabase", "·", "Canva", "·", "Python", "·", "Flask", "·", "Docker", "·", "SQLite", "·", "Railway", "·", "Vercel", "·"].map((t, j) => (
                   <span key={j}>{t}</span>
                 ))}
               </div>
@@ -482,7 +482,7 @@ function Index() {
         <div className="w-full max-w-[96vw] 2xl:max-w-[1600px] mx-auto">
           <div className="text-center mt-6 md:mt-8 mb-10 md:mb-16 reveal-up reveal">
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Layanan <span className="text-gradient">Unggulan</span> Kami</h2>
-            <p className="text-sm md:text-xl font-semibold text-foreground/90 max-w-2xl mx-auto">
+            <p className="text-sm md:text-xl font-semibold text-foreground/90 max-w-3xl mx-auto">
               Kami menyediakan solusi digital front-to-end <br className="md:hidden" /> untuk kebutuhan bisnis Anda.
             </p>
           </div>
