@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
-import { S as ArrowLeft, _ as ChevronRight, d as Menu, t as X, x as ArrowRight, y as Calendar } from "../_libs/lucide-react.mjs";
+import { C as ArrowLeft, S as ArrowRight, _ as ChevronRight, d as Menu, t as X, y as Calendar } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/blog-Dse8uOQ5.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();

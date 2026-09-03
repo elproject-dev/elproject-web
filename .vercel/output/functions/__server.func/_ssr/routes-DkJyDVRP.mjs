@@ -1,9 +1,9 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
-import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine } from "../_libs/lucide-react.mjs";
+import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine, x as ArrowUpRight } from "../_libs/lucide-react.mjs";
 import { t as LuPaintbrushVertical } from "../_libs/react-icons.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-C3XKjoUp.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DkJyDVRP.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useReveal() {
@@ -20,6 +20,126 @@ function useReveal() {
 		els.forEach((el) => io.observe(el));
 		return () => io.disconnect();
 	}, []);
+}
+var demos = [
+	{
+		title: "Sistem Poin - Manajemen Promo",
+		desc: "Manajemen Promo dan Poin untuk Swalayan.",
+		url: "https://maga-swalayan.vercel.app/"
+	},
+	{
+		title: "Aplikasi Kasir & Manajemen Stok",
+		desc: "Sistem POS lengkap dengan manajemen inventaris dan laporan penjualan.",
+		url: "https://cashier-app-neon.vercel.app/"
+	},
+	{
+		title: "Sistem Reservasi & Antrean Digital",
+		desc: "Platform booking jadwal & antrean real-time.",
+		url: "https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20tertarik%20mencoba%20demo%20Sistem%20Booking%20%26%20Antrean."
+	},
+	{
+		title: "Event ticket booking online",
+		desc: "Pemesanan tiket event online ",
+		url: "https://ticket-event-flame.vercel.app/"
+	},
+	{
+		title: "Manajement Keuangan Arus Keluar Masuk",
+		desc: "untuk mengelola arus keuangan bisnis,",
+		url: "https://jmb-liart.vercel.app/"
+	},
+	{
+		title: "Marketplace Aplikasi online shop",
+		desc: "Jualan Online dengan fitur pengembangan",
+		url: "https://toko-ungu.vercel.app/"
+	},
+	{
+		title: "Aplikasi Nonton Movie Gratis",
+		desc: "Nonton Movie Gratis",
+		url: "https://movies.elproject.studio/"
+	}
+];
+function LiveDemoModal({ isOpen, onClose }) {
+	(0, import_react.useEffect)(() => {
+		const handleKey = (e) => {
+			if (e.key === "Escape") onClose();
+		};
+		if (isOpen) {
+			document.body.style.overflow = "hidden";
+			window.addEventListener("keydown", handleKey);
+		} else document.body.style.overflow = "";
+		return () => {
+			document.body.style.overflow = "";
+			window.removeEventListener("keydown", handleKey);
+		};
+	}, [isOpen, onClose]);
+	if (!isOpen) return null;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "fixed inset-0 bg-black/70 backdrop-blur-sm",
+			onClick: onClose
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "relative w-full max-w-md bg-background border border-border/50 rounded-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-300",
+			onClick: (e) => e.stopPropagation(),
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "h-[2px] w-full bg-gradient-to-r from-purple-600 via-primary to-purple-400" }),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex items-center justify-between px-5 pt-5 pb-3",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
+						className: "text-lg font-bold font-display text-foreground",
+						children: ["Pilih ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "text-gradient",
+							children: "Live Demo"
+						})]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] text-muted-foreground mt-0.5",
+						children: "Coba langsung aplikasi yang kami kembangkan"
+					})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						onClick: onClose,
+						className: "p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer",
+						"aria-label": "Tutup",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { className: "w-4 h-4" })
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "h-px bg-border/40 mx-5" }),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "px-5 py-4 space-y-2.5 max-h-[60vh] overflow-y-auto scrollbar-none",
+					children: demos.map((demo) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+						href: demo.url,
+						target: "_blank",
+						rel: "noopener noreferrer",
+						className: "group flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border/30 hover:border-primary/40 bg-white/[0.02] hover:bg-primary/[0.06] transition-all duration-200",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "min-w-0",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate",
+								children: demo.title
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "text-[11px] text-muted-foreground mt-0.5 leading-relaxed",
+								children: demo.desc
+							})]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "shrink-0 w-7 h-7 rounded-lg bg-primary/10 group-hover:bg-primary flex items-center justify-center transition-all duration-200",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowUpRight, { className: "w-3.5 h-3.5 text-primary group-hover:text-primary-foreground transition-colors" })
+						})]
+					}, demo.title))
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "px-5 py-3.5 border-t border-border/30 bg-white/[0.01]",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+						href: "https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20ingin%20meminta%20akses%20live%20demo%20custom.",
+						target: "_blank",
+						rel: "noopener noreferrer",
+						className: "block text-center text-xs text-muted-foreground hover:text-primary transition-colors",
+						children: ["Butuh demo lain? ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "font-semibold text-primary",
+							children: "Hubungi kami"
+						})]
+					})
+				})
+			]
+		})]
+	});
 }
 var services = [
 	{
@@ -378,6 +498,7 @@ function Index() {
 	const [currentSlide, setCurrentSlide] = (0, import_react.useState)(0);
 	const [currentTesti, setCurrentTesti] = (0, import_react.useState)(0);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = (0, import_react.useState)(false);
+	const [isLiveDemoOpen, setIsLiveDemoOpen] = (0, import_react.useState)(false);
 	const [activeSection, setActiveSection] = (0, import_react.useState)("home");
 	(0, import_react.useEffect)(() => {
 		const handleScroll = () => {
@@ -564,11 +685,9 @@ function Index() {
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "w-full max-w-lg mx-auto lg:mx-0 mt-6 mb-10 md:mt-8 md:mb-12 flex flex-col sm:flex-row gap-4",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
-									href: "https://maga-swalayan.vercel.app/",
-									target: "_blank",
-									rel: "noopener noreferrer",
-									className: "btn-primary flex-1 justify-center",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									onClick: () => setIsLiveDemoOpen(true),
+									className: "btn-primary flex-1 justify-center cursor-pointer",
 									children: ["Live Demo ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "w-4 h-4" })]
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
 									href: "#layanan",
@@ -1171,6 +1290,10 @@ function Index() {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("footer", {
 				className: "border-t border-border/40 py-8 px-6 text-center text-[10px] md:text-xs text-muted-foreground transition-all duration-300 hover:text-primary hover:drop-shadow-[0_0_8px_var(--color-primary)] cursor-default",
 				children: "© 2026 EL PROJECT DEVELOPMENT BUILDER WEB APPS © 2026"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LiveDemoModal, {
+				isOpen: isLiveDemoOpen,
+				onClose: () => setIsLiveDemoOpen(false)
 			})
 		]
 	});

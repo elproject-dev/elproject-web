@@ -1,6 +1,6 @@
-import { n as createMiddleware } from "./server-DCnlVc2c.mjs";
+import { n as createMiddleware } from "./server-LeHU6ate.mjs";
 import { t as renderErrorPage } from "./ssr.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/start-CKS0dAQ2.js
+//#region node_modules/.nitro/vite/services/ssr/assets/start-rehXGcLu.js
 function dedupeSerializationAdapters(deduped, serializationAdapters) {
 	for (let i = 0, len = serializationAdapters.length; i < len; i++) {
 		const current = serializationAdapters[i];

@@ -155,6 +155,19 @@ var ArrowRight = createLucideIcon("arrow-right", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var ArrowUpRight = createLucideIcon("arrow-up-right", [["path", {
+	d: "M7 7h10v10",
+	key: "1tivn9"
+}], ["path", {
+	d: "M7 17 17 7",
+	key: "1vkiza"
+}]]);
+/**
+* @license lucide-react v1.31.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var CalendarCheck = createLucideIcon("calendar-check", [
 	["path", {
 		d: "M8 2v3",
@@ -591,4 +604,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { ArrowLeft as S, ChevronRight as _, Settings as a, CalendarCheck as b, School as c, Menu as d, LayoutTemplate as f, ClockArrowUp as g, CodeXml as h, Shield as i, PenTool as l, Code as m, Star as n, Server as o, Globe as p, ShoppingCart as r, Search as s, X as t, Palette as u, ChartLine as v, ArrowRight as x, Calendar as y };
+export { ArrowLeft as C, ArrowRight as S, ChevronRight as _, Settings as a, CalendarCheck as b, School as c, Menu as d, LayoutTemplate as f, ClockArrowUp as g, CodeXml as h, Shield as i, PenTool as l, Code as m, Star as n, Server as o, Globe as p, ShoppingCart as r, Search as s, X as t, Palette as u, ChartLine as v, ArrowUpRight as x, Calendar as y };
