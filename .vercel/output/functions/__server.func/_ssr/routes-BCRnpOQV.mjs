@@ -3,7 +3,7 @@ import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tan
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine, x as ArrowUpRight } from "../_libs/lucide-react.mjs";
 import { t as LuPaintbrushVertical } from "../_libs/react-icons.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DkJyDVRP.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BCRnpOQV.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useReveal() {
@@ -360,7 +360,7 @@ var testimonials = [
 		] })
 	},
 	{
-		name: "Kantong Mas",
+		name: "JMB Company",
 		role: "Pengusaha",
 		text: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("strong", { children: [
 			"Orangnya teliti,Sabar,Dan bisa di andalkan ",
@@ -371,7 +371,7 @@ var testimonials = [
 		] })
 	},
 	{
-		name: "CV.Aulia Usaha",
+		name: "Klinik Desa",
 		role: "Pengusaha",
 		text: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("strong", { children: [
 			"Dapat rekomendasi dari temenku",
