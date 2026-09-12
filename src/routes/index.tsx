@@ -116,8 +116,8 @@ const testimonials = [
     name: "Sinter Pamong", role: "Pengelola Sekolah", text: <strong>Desainnya bagus, harganya jg termasuk murah sih! Overall saya puas lihat hasilnya, <br></br> Next saya ajukan ke kepala sekolah lagi</strong>
   },
   { name: "KPKN Grobogan", role: "Staff PK3", text: <strong>Lagi iseng cari2 orang yang bisa buat sistem antrean<br />ee malah ketemu mas ini.. ternyata diluar ekpetasi.<br />Joss gandos top markotop garapanmu mas...</strong> },
-  { name: "Kantong Mas", role: "Pengusaha", text: <strong>Orangnya teliti,Sabar,Dan bisa di andalkan <br />Bintang 5 lah buat developer ini<br />Terima kasih</strong> },
-  { name: "CV.Aulia Usaha", role: "Pengusaha", text: <strong>Dapat rekomendasi dari temenku<br />gak nyangka sebagus itu<br />jangan ragu pesan aplikasi sama mas ini...</strong> },
+  { name: "JMB Company", role: "Pengusaha", text: <strong>Orangnya teliti,Sabar,Dan bisa di andalkan <br />Bintang 5 lah buat developer ini<br />Terima kasih</strong> },
+  { name: "Klinik Desa", role: "Pengusaha", text: <strong>Dapat rekomendasi dari temenku<br />gak nyangka sebagus itu<br />jangan ragu pesan aplikasi sama mas ini...</strong> },
   { name: "Kandang Biru", role: "Pengusaha", text: <strong>Lumayan lah daripada Langganan bulanan<br />Aplikasinya User-friendly banget <br />biasanya Aplikasi pada ribet ini mah enggak!</strong>, rating: 4 },
 ];
 
