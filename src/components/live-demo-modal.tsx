@@ -1,140 +1,148 @@
-import { useEffect } from "react";
-import { X, ArrowUpRight } from "lucide-react";
+import { X } from "lucide-react";
+
+export interface DemoItem {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  isExternal?: boolean;
+}
+
+const DEMO_ITEMS: DemoItem[] = [
+  {
+    id: "maga-swalayan",
+    title: "Maga Swalayan & Toko Online",
+    description: "Platform swalayan & e-commerce modern dengan katalog produk, keranjang belanja, dan manajemen transaksi.",
+    url: "https://maga-swalayan.vercel.app/",
+  },
+  {
+    id: "erp-dashboard",
+    title: "Dashboard ERP & Analytic Bisnis",
+    description: "Dashboard executive monitoring performa bisnis, statistik realtime, dan manajemen karyawan.",
+    url: "https://elproject-erppos.vercel.app",
+    isExternal: false,
+  },
+  {
+    id: "toko-ungu",
+    title: "Toko Ungu - E-Commerce",
+    description: "Website e-commerce & toko online interaktif dengan katalog produk, keranjang belanja, dan tampilan modern.",
+    url: "https://toko-ungu.vercel.app/",
+  },
+  {
+    id: "finance-cashflow",
+    title: "Aplikasi Keuangan & Arus Kas",
+    description: "Sistem pencatatan keuangan arus kas masuk & keluar, laporan keuangan bulanan, dan manajemen anggaran.",
+    url: "https://jmb-liart.vercel.app/",
+  },
+  {
+    id: "movies-app",
+    title: "Aplikasi Streaming & Informasi Film",
+    description: "Platform streaming film & hiburan dengan katalog bioskop, pencarian cepat, sinopsis, dan UI modern.",
+    url: "https://movies.elproject.studio/",
+  },
+  {
+    id: "ticket-event",
+    title: "Sistem Tiket Event & Konser",
+    description: "Platform pemesanan tiket event & konser online dengan sistem e-ticket, QR code check-in, dan manajemen tiket.",
+    url: "https://ticket-event-flame.vercel.app/",
+  },
+  {
+    id: "booking-app",
+    title: "Sistem Booking & Antrean Digital",
+    description: "Sistem reservasi jadwal otomatis untuk klinik, salon, bengkel, dan manajemen antrean pelanggan.",
+    url: "https://wa.me/6283867180887?text=Halo%20Tembus%20Digital,%20saya%20tertarik%20mencoba%20demo%20Sistem%20Booking%20%26%20Antrean",
+    isExternal: true,
+  },
+  {
+    id: "custom-demo",
+    title: "Minta Demo Custom / Konsultasi Gratis",
+    description: "Membutuhkan sistem aplikasi dengan alur bisnis khusus? Konsultasikan ide Anda secara langsung.",
+    url: "https://wa.me/6283867180887?text=Halo%20Tembus%20Digital,%20saya%20ingin%20meminta%20demo%20aplikasi%20custom%20sesuai%20kebutuhan%20bisnis%20saya",
+    isExternal: true,
+  },
+];
 
 interface LiveDemoModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const demos = [
-  {
-    title: "Sistem Poin - Manajemen Promo",
-    desc: "Manajemen Promo dan Poin untuk Swalayan.",
-    url: "https://maga-swalayan.vercel.app/",
-  },
-  {
-    title: "Aplikasi Kasir & Manajemen Stok",
-    desc: "Sistem POS lengkap dengan manajemen inventaris dan laporan penjualan.",
-    url: "https://cashier-app-neon.vercel.app/",
-  },
-  {
-    title: "Sistem Reservasi & Antrean Digital",
-    desc: "Platform booking jadwal & antrean real-time.",
-    url: "https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20tertarik%20mencoba%20demo%20Sistem%20Booking%20%26%20Antrean.",
-  },
-  {
-    title: "Event ticket booking online",
-    desc: "Pemesanan tiket event online ",
-    url: "https://ticket-event-flame.vercel.app/",
-  },
-  {
-    title: "Manajement Keuangan Arus Keluar Masuk",
-    desc: "untuk mengelola arus keuangan bisnis,",
-    url: "https://jmb-liart.vercel.app/",
-  },
-  {
-    title: "Marketplace Aplikasi online shop",
-    desc: "Jualan Online dengan fitur pengembangan",
-    url: "https://toko-ungu.vercel.app/",
-  },
-  {
-    title: "Aplikasi Nonton Movie Gratis",
-    desc: "Nonton Movie Gratis",
-    url: "https://movies.elproject.studio/",
-  },
-];
-
 export function LiveDemoModal({ isOpen, onClose }: LiveDemoModalProps) {
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKey);
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-md bg-background border border-border/50 rounded-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Purple top line */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-purple-600 via-primary to-purple-400" />
-
+      {/* Modal Container - Purple Theme */}
+      <div className="relative w-full max-w-2xl bg-[#0f0b17] border border-purple-500/30 rounded-2xl shadow-[0_0_50px_rgba(147,51,234,0.25)] overflow-hidden z-10 flex flex-col my-auto max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="bg-gradient-to-r from-[#1e1333] via-[#160c28] to-[#0f0b17] p-5 border-b border-purple-500/20 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold font-display text-foreground">
-              Pilih <span className="text-gradient">Live Demo</span>
+            <h2 className="text-xl sm:text-2xl font-bold text-white font-display tracking-tight">
+              Pilih Live Demo Aplikasi
             </h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Coba langsung aplikasi yang kami kembangkan
+            <p className="text-xs sm:text-sm text-purple-200/70 mt-0.5">
+              Pilih salah satu demo sistem yang tersedia saat ini
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
-            aria-label="Tutup"
+            className="w-9 h-9 rounded-full bg-purple-500/10 hover:bg-purple-500/25 text-purple-200 hover:text-white flex items-center justify-center transition-colors border border-purple-500/30 shrink-0"
+            aria-label="Tutup Pop-up Demo"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-border/40 mx-5" />
+        {/* Demo List Body */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 max-h-[60vh] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-[#0c0814]">
+          {DEMO_ITEMS.map((item) => {
+            return (
+              <div
+                key={item.id}
+                className="group relative bg-[#181226]/80 hover:bg-[#201736] border border-purple-500/20 hover:border-purple-500/60 rounded-2xl p-4 transition-all duration-300 hover:shadow-[0_8px_25px_rgba(147,51,234,0.2)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div>
+                  <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-gray-300 mt-1 leading-relaxed max-w-md">
+                    {item.description}
+                  </p>
+                </div>
 
-        {/* Demo List */}
-        <div className="px-5 py-4 space-y-2.5 max-h-[60vh] overflow-y-auto scrollbar-none">
-          {demos.map((demo) => (
-            <a
-              key={demo.title}
-              href={demo.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border/30 hover:border-primary/40 bg-white/[0.02] hover:bg-primary/[0.06] transition-all duration-200"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                  {demo.title}
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                  {demo.desc}
+                <div className="shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-purple-500/15 flex justify-end">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="inline-flex items-center justify-center px-4.5 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold transition-all duration-200 shadow-md hover:shadow-purple-500/40 active:scale-95"
+                  >
+                    <span>{item.isExternal ? "Hubungi CS" : "Uji Coba Demo"}</span>
+                  </a>
                 </div>
               </div>
-              <div className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 group-hover:bg-primary flex items-center justify-center transition-all duration-200">
-                <ArrowUpRight className="w-3.5 h-3.5 text-primary group-hover:text-primary-foreground transition-colors" />
-              </div>
-            </a>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-border/30 bg-white/[0.01]">
+        {/* Footer info */}
+        <div className="bg-[#130b21] px-5 py-3.5 border-t border-purple-500/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-purple-200/70">
+          <p>Butuh aplikasi dengan desain &amp; fitur khusus?</p>
           <a
-            href="https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20ingin%20meminta%20akses%20live%20demo%20custom."
+            href="https://wa.me/6283867180887?text=Halo%20Tembus%20Digital,%20saya%20ingin%20diskusi%20pembuatan%20aplikasi%20custom"
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-xs text-muted-foreground hover:text-primary transition-colors"
+            onClick={onClose}
+            className="text-purple-300 font-medium hover:text-white hover:underline flex items-center gap-1 transition-colors"
           >
-            Butuh demo lain? <span className="font-semibold text-primary">Hubungi kami</span>
+            Konsultasi Gratis via WhatsApp ↗
           </a>
         </div>
       </div>
