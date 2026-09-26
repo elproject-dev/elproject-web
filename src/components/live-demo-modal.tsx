@@ -50,14 +50,14 @@ const DEMO_ITEMS: DemoItem[] = [
     id: "booking-app",
     title: "Sistem Booking & Antrean Digital",
     description: "Sistem reservasi jadwal otomatis untuk klinik, salon, bengkel, dan manajemen antrean pelanggan.",
-    url: "https://wa.me/6283867180887?text=Halo%20Tembus%20Digital,%20saya%20tertarik%20mencoba%20demo%20Sistem%20Booking%20%26%20Antrean",
+    url: "https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20tertarik%20mencoba%20demo%20Sistem%20Booking%20%26%20Antrean",
     isExternal: true,
   },
   {
     id: "custom-demo",
     title: "Minta Demo Custom / Konsultasi Gratis",
     description: "Membutuhkan sistem aplikasi dengan alur bisnis khusus? Konsultasikan ide Anda secara langsung.",
-    url: "https://wa.me/6283867180887?text=Halo%20Tembus%20Digital,%20saya%20ingin%20meminta%20demo%20aplikasi%20custom%20sesuai%20kebutuhan%20bisnis%20saya",
+    url: "https://wa.me/6283867180887?text=Halo%20EL%20Project,%20saya%20ingin%20meminta%20demo%20aplikasi%20custom%20sesuai%20kebutuhan%20bisnis%20saya",
     isExternal: true,
   },
 ];
