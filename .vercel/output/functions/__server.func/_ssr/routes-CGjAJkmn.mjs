@@ -3,7 +3,7 @@ import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tan
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine } from "../_libs/lucide-react.mjs";
 import { t as LuPaintbrushVertical } from "../_libs/react-icons.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-DLwWkMzo.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CGjAJkmn.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useReveal() {
@@ -392,134 +392,30 @@ var testimonials = [
 		rating: 4
 	}
 ];
-var AnimatedCounter = ({ end, suffix = "", decimals = 0 }) => {
-	const [count, setCount] = (0, import_react.useState)(0);
-	const [isMounted, setIsMounted] = (0, import_react.useState)(false);
-	(0, import_react.useEffect)(() => {
-		setIsMounted(true);
-		let startTimestamp = null;
-		const duration = 4500;
-		const step = (timestamp) => {
-			if (!startTimestamp) startTimestamp = timestamp;
-			const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-			setCount(progress * end);
-			if (progress < 1) requestAnimationFrame(step);
-			else setCount(end);
-		};
-		requestAnimationFrame(step);
-	}, [end]);
-	if (!isMounted) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: `${end.toFixed(decimals)}${suffix}` });
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-		suppressHydrationWarning: true,
-		children: `${count.toFixed(decimals)}${suffix}`
-	});
-};
-var TypingHighlight = () => {
-	const [index, setIndex] = (0, import_react.useState)(0);
-	const [hasStarted, setHasStarted] = (0, import_react.useState)(false);
-	const [isMounted, setIsMounted] = (0, import_react.useState)(false);
-	const containerRef = (0, import_react.useRef)(null);
-	const text1 = "Kami merancang, membangun ";
-	const text2 = "Aplikasi & Server";
-	const text3 = "Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern";
-	const text4 = "siap mengangkat bisnis Anda ke level berikutnya";
-	(0, import_react.useEffect)(() => {
-		setIsMounted(true);
-	}, []);
-	(0, import_react.useEffect)(() => {
-		if (!isMounted) return;
-		const observer = new IntersectionObserver(([entry]) => {
-			if (entry.isIntersecting && !hasStarted) setHasStarted(true);
-		}, { threshold: .3 });
-		if (containerRef.current) observer.observe(containerRef.current);
-		return () => observer.disconnect();
-	}, [hasStarted, isMounted]);
-	(0, import_react.useEffect)(() => {
-		if (!hasStarted) return;
-		let timer;
-		const startTimeout = setTimeout(() => {
-			timer = setInterval(() => {
-				setIndex((prev) => {
-					if (prev >= 153) {
-						clearInterval(timer);
-						return prev;
-					}
-					return prev + 1;
-				});
-			}, 40);
-		}, 200);
-		return () => {
-			clearTimeout(startTimeout);
-			if (timer) clearInterval(timer);
-		};
-	}, [153, hasStarted]);
-	const getSub = (text, start) => {
-		const len = index - start;
-		if (len <= 0) return "";
-		return text.substring(0, len);
-	};
-	const end1 = 26;
-	const end2 = 43;
-	const end3 = 106;
-	if (!isMounted) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "w-full max-w-4xl mx-auto text-center reveal-up reveal",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
-				children: [text1, /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+var StaticHighlight = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+	className: "w-full max-w-4xl mx-auto text-center reveal-up reveal",
+	children: [
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+			className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
+			children: [
+				"Kami merancang, membangun",
+				" ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "text-gradient font-bold",
-					children: text2
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]",
-				children: text3
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
-				children: text4
-			})
-		]
-	});
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		ref: containerRef,
-		suppressHydrationWarning: true,
-		className: "w-full max-w-4xl mx-auto text-center reveal-up reveal",
-		children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-				suppressHydrationWarning: true,
-				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
-				children: [
-					getSub(text1, 0),
-					index > end1 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "text-gradient font-bold",
-						children: getSub(text2, end1)
-					}),
-					index < end2 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "animate-pulse",
-						children: "|"
-					})
-				]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-				suppressHydrationWarning: true,
-				className: "text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]",
-				children: [getSub(text3, end2), index >= end2 && index < end3 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "animate-pulse",
-					children: "|"
-				})]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-				suppressHydrationWarning: true,
-				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
-				children: [getSub(text4, end3), index >= end3 && index < 153 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "animate-pulse",
-					children: "|"
-				})]
-			})
-		]
-	});
-};
+					children: "Aplikasi & Server"
+				})
+			]
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]",
+			children: "Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern"
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
+			children: "siap mengangkat bisnis Anda ke level berikutnya"
+		})
+	]
+});
 function Index() {
 	useReveal();
 	const slides = [
@@ -735,10 +631,7 @@ function Index() {
 										className: "glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-xl md:text-2xl font-display font-bold text-gradient",
-											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnimatedCounter, {
-												end: 120,
-												suffix: "+"
-											})
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "120+" })
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1",
 											children: "Project"
@@ -748,10 +641,7 @@ function Index() {
 										className: "glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-xl md:text-2xl font-display font-bold text-gradient",
-											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnimatedCounter, {
-												end: 80,
-												suffix: "+"
-											})
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "80+" })
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1",
 											children: "Klien"
@@ -761,11 +651,7 @@ function Index() {
 										className: "glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-xl md:text-2xl font-display font-bold text-gradient translate-x-1",
-											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnimatedCounter, {
-												end: 4.9,
-												decimals: 1,
-												suffix: "★"
-											})
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "4.9★" })
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											className: "text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1",
 											children: "Rating"
@@ -821,7 +707,7 @@ function Index() {
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
 				className: "px-6 relative z-10 mt-16 md:mt-24 pb-10",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TypingHighlight, {})
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(StaticHighlight, {})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
 				className: "py-8 border-y border-border/40",

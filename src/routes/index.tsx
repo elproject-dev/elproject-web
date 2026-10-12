@@ -121,138 +121,20 @@ const testimonials = [
   { name: "Kandang Biru", role: "Pengusaha", text: <strong>Lumayan lah daripada Langganan bulanan<br />Aplikasinya User-friendly banget <br />biasanya Aplikasi pada ribet ini mah enggak!</strong>, rating: 4 },
 ];
 
-const AnimatedCounter = ({ end, suffix = "", decimals = 0 }: { end: number, suffix?: string, decimals?: number }) => {
-  const [count, setCount] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    let startTimestamp: number | null = null;
-    const duration = 4500; // Durasi sangat pelan (4.5 detik)
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Linear progress: konstan dan pelan dari awal sampai akhir
-      const easeProgress = progress;
-      setCount(easeProgress * end);
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        setCount(end);
-      }
-    };
-
-    requestAnimationFrame(step);
-  }, [end]);
-
-  // Return static value on server, animated value on client
-  if (!isMounted) return <span>{`${end.toFixed(decimals)}${suffix}`}</span>;
-  return <span suppressHydrationWarning>{`${count.toFixed(decimals)}${suffix}`}</span>;
-};
-
-const TypingHighlight = () => {
-  const [index, setIndex] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const text1 = "Kami merancang, membangun ";
-  const text2 = "Aplikasi & Server";
-  const text3 = "Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern";
-  const text4 = "siap mengangkat bisnis Anda ke level berikutnya";
-  const fullText = text1 + text2 + text3 + text4;
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Pantau apakah elemen sudah terlihat di layar
-  useEffect(() => {
-    if (!isMounted) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasStarted) {
-          setHasStarted(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasStarted, isMounted]);
-
-  useEffect(() => {
-    if (!hasStarted) return;
-
-    let timer: any;
-    // Delay lebih singkat karena sudah menunggu scroll
-    const startTimeout = setTimeout(() => {
-      timer = setInterval(() => {
-        setIndex(prev => {
-          if (prev >= fullText.length) {
-            clearInterval(timer);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 40);
-    }, 200);
-    return () => {
-      clearTimeout(startTimeout);
-      if (timer) clearInterval(timer);
-    };
-  }, [fullText.length, hasStarted]);
-
-  const getSub = (text: string, start: number) => {
-    const len = index - start;
-    if (len <= 0) return "";
-    return text.substring(0, len);
-  };
-
-  const end1 = text1.length;
-  const end2 = end1 + text2.length;
-  const end3 = end2 + text3.length;
-
-  // On server (SSR) or before mount, render static text to prevent hydration mismatch
-  if (!isMounted) {
-    return (
-      <div className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
-        <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
-          {text1}<span className="text-gradient font-bold">{text2}</span>
-        </p>
-        <p className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
-          {text3}
-        </p>
-        <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
-          {text4}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} suppressHydrationWarning className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
-      <p suppressHydrationWarning className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
-        {getSub(text1, 0)}
-        {index > end1 && <span className="text-gradient font-bold">{getSub(text2, end1)}</span>}
-        {index < end2 && <span className="animate-pulse">|</span>}
-      </p>
-      <p suppressHydrationWarning className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
-        {getSub(text3, end2)}
-        {index >= end2 && index < end3 && <span className="animate-pulse">|</span>}
-      </p>
-      <p suppressHydrationWarning className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
-        {getSub(text4, end3)}
-        {index >= end3 && index < fullText.length && <span className="animate-pulse">|</span>}
-      </p>
-    </div>
-  );
-};
+const StaticHighlight = () => (
+  <div className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
+    <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+      Kami merancang, membangun{" "}
+      <span className="text-gradient font-bold">Aplikasi &amp; Server</span>
+    </p>
+    <p className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
+      Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern
+    </p>
+    <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+      siap mengangkat bisnis Anda ke level berikutnya
+    </p>
+  </div>
+);
 
 function Index() {
   useReveal();
@@ -412,19 +294,19 @@ function Index() {
             <div className="grid grid-cols-3 gap-3 md:gap-4 w-full max-w-lg mx-auto lg:mx-0">
               <div className="glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center">
                 <div className="text-xl md:text-2xl font-display font-bold text-gradient">
-                  <AnimatedCounter end={120} suffix="+" />
+                  <span>120+</span>
                 </div>
                 <div className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1">Project</div>
               </div>
               <div className="glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center">
                 <div className="text-xl md:text-2xl font-display font-bold text-gradient">
-                  <AnimatedCounter end={80} suffix="+" />
+                  <span>80+</span>
                 </div>
                 <div className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1">Klien</div>
               </div>
               <div className="glass-card rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center">
                 <div className="text-xl md:text-2xl font-display font-bold text-gradient translate-x-1">
-                  <AnimatedCounter end={4.9} decimals={1} suffix="★" />
+                  <span>4.9★</span>
                 </div>
                 <div className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider mt-1">Rating</div>
               </div>
@@ -492,7 +374,7 @@ function Index() {
 
       {/* HIGHLIGHT CARD */}
       <section className="px-6 relative z-10 mt-16 md:mt-24 pb-10">
-        <TypingHighlight />
+        <StaticHighlight />
       </section>
 
       {/* MARQUEE */}
