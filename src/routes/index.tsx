@@ -144,7 +144,7 @@ const AnimatedCounter = ({ end, suffix = "", decimals = 0 }: { end: number, suff
     requestAnimationFrame(step);
   }, [end]);
 
-  return <>{count.toFixed(decimals)}{suffix}</>;
+  return <span suppressHydrationWarning>{`${count.toFixed(decimals)}${suffix}`}</span>;
 };
 
 const TypingHighlight = () => {
@@ -209,17 +209,17 @@ const TypingHighlight = () => {
   const end3 = end2 + text3.length;
 
   return (
-    <div ref={containerRef} className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
-      <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+    <div ref={containerRef} suppressHydrationWarning className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
+      <p suppressHydrationWarning className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
         {getSub(text1, 0)}
         {index > end1 && <span className="text-gradient font-bold">{getSub(text2, end1)}</span>}
         {index < end2 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
+      <p suppressHydrationWarning className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
         {getSub(text3, end2)}
         {index >= end2 && index < end3 && <span className="animate-pulse">|</span>}
       </p>
-      <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+      <p suppressHydrationWarning className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
         {getSub(text4, end3)}
         {index >= end3 && index < fullText.length && <span className="animate-pulse">|</span>}
       </p>
@@ -441,6 +441,7 @@ function Index() {
                   <button
                     key={index}
                     onClick={() => goToSlide(index)}
+                    aria-label={`Pilih slide ${index + 1}`}
                     className={`rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide
                       ? "w-6 h-2 bg-primary shadow-[0_0_8px_var(--color-primary)]"
                       : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/60 md:bg-foreground/30 md:hover:bg-foreground/60"
@@ -557,7 +558,7 @@ function Index() {
 
             <div className="relative z-10 max-w-xl">
               <h2 className="text-[34px] md:text-[39px] leading-tight font-bold mb-6 text-foreground drop-shadow-lg">
-                Lebih dari sekadar <span className="text-gradient">developer</span><br></br>kami partner pertumbuhan Anda.
+                Lebih dari sekadar <span className="text-gradient">developer</span><br />kami partner pertumbuhan Anda.
               </h2>
               <p className="text-xs md:text-sm text-foreground font-semibold mb-8 drop-shadow-md">
                 Kami memahami bahwa aplikasi yang hebat bukan hanya soal kode saja,<br className="hidden md:inline" />
@@ -692,7 +693,8 @@ function Index() {
               <button
                 key={`dot-${i}`}
                 onClick={() => setCurrentTesti(i)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                aria-label={`Pilih testimoni ${i + 1}`}
+                className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
               />
             ))}
           </div>

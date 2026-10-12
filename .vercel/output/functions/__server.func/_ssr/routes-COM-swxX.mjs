@@ -3,7 +3,7 @@ import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tan
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine } from "../_libs/lucide-react.mjs";
 import { t as LuPaintbrushVertical } from "../_libs/react-icons.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-EvrGoUcY.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-COM-swxX.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useReveal() {
@@ -406,7 +406,10 @@ var AnimatedCounter = ({ end, suffix = "", decimals = 0 }) => {
 		};
 		requestAnimationFrame(step);
 	}, [end]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [count.toFixed(decimals), suffix] });
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+		suppressHydrationWarning: true,
+		children: `${count.toFixed(decimals)}${suffix}`
+	});
 };
 var TypingHighlight = () => {
 	const [index, setIndex] = (0, import_react.useState)(0);
@@ -452,9 +455,11 @@ var TypingHighlight = () => {
 	const end3 = 106;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		ref: containerRef,
+		suppressHydrationWarning: true,
 		className: "w-full max-w-4xl mx-auto text-center reveal-up reveal",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				suppressHydrationWarning: true,
 				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
 				children: [
 					getSub(text1, 0),
@@ -469,6 +474,7 @@ var TypingHighlight = () => {
 				]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				suppressHydrationWarning: true,
 				className: "text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]",
 				children: [getSub(text3, end2), index >= end2 && index < end3 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "animate-pulse",
@@ -476,6 +482,7 @@ var TypingHighlight = () => {
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				suppressHydrationWarning: true,
 				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
 				children: [getSub(text4, end3), index >= end3 && index < 153 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "animate-pulse",
@@ -769,6 +776,7 @@ function Index() {
 									className: "flex justify-center gap-2",
 									children: slides.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 										onClick: () => goToSlide(index),
+										"aria-label": `Pilih slide ${index + 1}`,
 										className: `rounded-full transition-all duration-300 cursor-pointer ${index === currentSlide ? "w-6 h-2 bg-primary shadow-[0_0_8px_var(--color-primary)]" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/60 md:bg-foreground/30 md:hover:bg-foreground/60"}`
 									}, index))
 								}),
@@ -1119,7 +1127,8 @@ function Index() {
 							className: "flex justify-center gap-2 mt-8",
 							children: testimonials.map((_, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								onClick: () => setCurrentTesti(i),
-								className: `w-2 h-2 rounded-full transition-all duration-300 ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`
+								"aria-label": `Pilih testimoni ${i + 1}`,
+								className: `w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${i === currentTesti ? "bg-primary w-6" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"}`
 							}, `dot-${i}`))
 						})
 					]
