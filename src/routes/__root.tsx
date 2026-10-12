@@ -105,23 +105,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     scripts: [
       {
-        children: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-W475F8Z5');`,
-      },
-      {
-        src: "https://www.googletagmanager.com/gtag/js?id=G-6VKWPQVQPQ",
-        async: true,
-      },
-      {
-        children: `window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-6VKWPQVQPQ');`,
-      },
-      {
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
@@ -227,11 +210,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <head>
+    <html lang="en" suppressHydrationWarning>
+      <head suppressHydrationWarning>
         <HeadContent />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {/* Google Tag Manager (noscript) */}
         <noscript
           dangerouslySetInnerHTML={{
@@ -250,11 +233,38 @@ function RootComponent() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(() => {
-        // SW registered successfully
-      }).catch(() => {
-        // SW registration may be blocked by browser extension or privacy settings — this is non-fatal
-      });
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    // Safely load GTM & Google Analytics on client post-mount to prevent hydration mismatch
+    try {
+      const w = window as any;
+      w.dataLayer = w.dataLayer || [];
+      w.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+
+      if (!document.getElementById('gtm-script')) {
+        const gtmScript = document.createElement('script');
+        gtmScript.id = 'gtm-script';
+        gtmScript.async = true;
+        gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-W475F8Z5';
+        document.head.appendChild(gtmScript);
+      }
+
+      if (!document.getElementById('ga-script')) {
+        const gaScript = document.createElement('script');
+        gaScript.id = 'ga-script';
+        gaScript.async = true;
+        gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-6VKWPQVQPQ';
+        document.head.appendChild(gaScript);
+
+        function gtag(...args: any[]) {
+          w.dataLayer.push(args);
+        }
+        gtag('js', new Date());
+        gtag('config', 'G-6VKWPQVQPQ');
+      }
+    } catch {
+      // Ignore analytics loading failures
     }
   }, []);
 

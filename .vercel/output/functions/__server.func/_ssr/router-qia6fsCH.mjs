@@ -3,8 +3,8 @@ import { n as require_jsx_runtime, r as require_react, t as QueryClientProvider 
 import { c as lazyRouteComponent, d as Link, f as useRouter, i as HeadContent, l as createFileRoute, o as createRouter, r as Scripts, s as Outlet, u as createRootRouteWithContext } from "../_libs/@tanstack/react-router+[...].mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as Analytics } from "../_libs/vercel__analytics.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-CDulqV41.js
-var router_CDulqV41_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
+//#region node_modules/.nitro/vite/services/ssr/assets/router-qia6fsCH.js
+var router_qia6fsCH_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var styles_default = "/assets/styles-CsMfYr-Q.css";
@@ -186,115 +186,99 @@ var Route$2 = createRootRouteWithContext()({
 				href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap"
 			}
 		],
-		scripts: [
-			{ children: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-W475F8Z5');` },
-			{
-				src: "https://www.googletagmanager.com/gtag/js?id=G-6VKWPQVQPQ",
-				async: true
-			},
-			{ children: `window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-6VKWPQVQPQ');` },
-			{
-				type: "application/ld+json",
-				children: JSON.stringify({
-					"@context": "https://schema.org",
-					"@type": "ProfessionalService",
-					"name": "Jasa Pembuatan Aplikasi & Software House Yogyakarta - EL Project",
-					"image": "https://www.elproject.studio/og-image.jpg",
-					"url": "https://www.elproject.studio",
-					"telephone": "+6283867180887",
-					"priceRange": "Rp 1.000.000 - Custom",
-					"knowsAbout": [
-						"Jasa Pembuatan Aplikasi",
-						"Jasa Pembuatan Aplikasi Yogyakarta",
-						"Jasa Pembuatan Website",
-						"Software House Jogja",
-						"Aplikasi Kasir POS",
-						"Sistem ERP",
-						"Pembuatan Aplikasi Android",
-						"Pembuatan Aplikasi iOS",
-						"Jasa Developer Aplikasi",
-						"Konsultan IT"
-					],
-					"serviceArea": {
-						"@type": "AdministrativeArea",
-						"name": "Indonesia"
-					},
-					"address": {
-						"@type": "PostalAddress",
-						"addressCountry": "ID",
-						"areaServed": "Indonesia, Global",
-						"telephone": "+6283867180887"
-					},
-					"hasMap": "https://maps.app.goo.gl/2Zz55g4VUP2fi1Ya6",
-					"sameAs": ["https://www.instagram.com/elproject_development"],
-					"description": "Kami adalah salah satu penyedia layanan jasa pembuatan aplikasi mobile, dekstop, ios dan website, aplikasi mobile android, ios, desktop, serta web app. Kami menyediakan jasa pembuatan server juga, konsultasi bisnis, serta menyediakan jasa pembuatan Konten Kreatif. Kami akan memberikan rekomendasi dan arahan terbaik untuk bisnis Anda"
-				})
-			},
-			{
-				type: "application/ld+json",
-				children: JSON.stringify({
-					"@context": "https://schema.org",
-					"@type": "FAQPage",
-					"mainEntity": [
-						{
-							"@type": "Question",
-							"name": "Apa saja layanan yang disediakan oleh EL Project?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "EL Project menyediakan jasa pembuatan aplikasi mobile (Android & iOS), aplikasi desktop (Windows, macOS, Linux), website modern (landing page, e-commerce, web app), pembuatan & manajemen server, serta konsultasi IT & bisnis profesional."
-							}
-						},
-						{
-							"@type": "Question",
-							"name": "Bagaimana cara berkonsultasi atau memesan layanan di EL Project?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "Anda dapat menghubungi kami langsung melalui nomor WhatsApp resmi di +62 838 6718 0887 atau mengirim pesan langsung (DM) ke akun Instagram kami di @elproject_development."
-							}
-						},
-						{
-							"@type": "Question",
-							"name": "Berapa biaya pembuatan aplikasi atau website di EL Project?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "Biaya pengembangan bervariasi mulai dari Rp 1.000.000, tergantung pada kompleksitas fitur, platform yang digunakan (web, mobile, atau desktop), serta estimasi waktu pengerjaan. Kami selalu memberikan opsi penawaran terbaik yang sesuai dengan anggaran dan kebutuhan bisnis Anda."
-							}
-						},
-						{
-							"@type": "Question",
-							"name": "Teknologi dan tools apa saja yang digunakan oleh EL Project?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "Kami menggunakan berbagai tumpukan teknologi dan tools modern seperti Javascript, React, SwiftUI, Next.js, Flutter, Node.js, Figma, AWS, Firebase, GitHub, Supabase, Canva, Python, TypeScript, TanStack Start, TailwindCSS, dan Nitro/Vercel serverless."
-							}
-						},
-						{
-							"@type": "Question",
-							"name": "Apakah EL Project menyediakan layanan pasca-pembuatan (maintenance & support)?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "Ya, setiap proyek yang kami kerjakan dilengkapi dengan masa garansi pemeliharaan (maintenance) gratis untuk memastikan aplikasi berjalan lancar dan bebas dari bug. Kami juga menawarkan paket dukungan jangka panjang untuk pembaruan fitur atau kapasitas server."
-							}
-						},
-						{
-							"@type": "Question",
-							"name": "Apakah EL Project menyediakan kursus atau kelas belajar pemrograman?",
-							"acceptedAnswer": {
-								"@type": "Answer",
-								"text": "Ya, kami menyediakan layanan kursus dan mentoring belajar pemrograman intensif secara terarah dari pemula (nol) hingga tingkat mahir (sampai bisa) untuk menguasai teknologi modern sesuai standar kebutuhan industri."
-							}
+		scripts: [{
+			type: "application/ld+json",
+			children: JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "ProfessionalService",
+				"name": "Jasa Pembuatan Aplikasi & Software House Yogyakarta - EL Project",
+				"image": "https://www.elproject.studio/og-image.jpg",
+				"url": "https://www.elproject.studio",
+				"telephone": "+6283867180887",
+				"priceRange": "Rp 1.000.000 - Custom",
+				"knowsAbout": [
+					"Jasa Pembuatan Aplikasi",
+					"Jasa Pembuatan Aplikasi Yogyakarta",
+					"Jasa Pembuatan Website",
+					"Software House Jogja",
+					"Aplikasi Kasir POS",
+					"Sistem ERP",
+					"Pembuatan Aplikasi Android",
+					"Pembuatan Aplikasi iOS",
+					"Jasa Developer Aplikasi",
+					"Konsultan IT"
+				],
+				"serviceArea": {
+					"@type": "AdministrativeArea",
+					"name": "Indonesia"
+				},
+				"address": {
+					"@type": "PostalAddress",
+					"addressCountry": "ID",
+					"areaServed": "Indonesia, Global",
+					"telephone": "+6283867180887"
+				},
+				"hasMap": "https://maps.app.goo.gl/2Zz55g4VUP2fi1Ya6",
+				"sameAs": ["https://www.instagram.com/elproject_development"],
+				"description": "Kami adalah salah satu penyedia layanan jasa pembuatan aplikasi mobile, dekstop, ios dan website, aplikasi mobile android, ios, desktop, serta web app. Kami menyediakan jasa pembuatan server juga, konsultasi bisnis, serta menyediakan jasa pembuatan Konten Kreatif. Kami akan memberikan rekomendasi dan arahan terbaik untuk bisnis Anda"
+			})
+		}, {
+			type: "application/ld+json",
+			children: JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "FAQPage",
+				"mainEntity": [
+					{
+						"@type": "Question",
+						"name": "Apa saja layanan yang disediakan oleh EL Project?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "EL Project menyediakan jasa pembuatan aplikasi mobile (Android & iOS), aplikasi desktop (Windows, macOS, Linux), website modern (landing page, e-commerce, web app), pembuatan & manajemen server, serta konsultasi IT & bisnis profesional."
 						}
-					]
-				})
-			}
-		]
+					},
+					{
+						"@type": "Question",
+						"name": "Bagaimana cara berkonsultasi atau memesan layanan di EL Project?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "Anda dapat menghubungi kami langsung melalui nomor WhatsApp resmi di +62 838 6718 0887 atau mengirim pesan langsung (DM) ke akun Instagram kami di @elproject_development."
+						}
+					},
+					{
+						"@type": "Question",
+						"name": "Berapa biaya pembuatan aplikasi atau website di EL Project?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "Biaya pengembangan bervariasi mulai dari Rp 1.000.000, tergantung pada kompleksitas fitur, platform yang digunakan (web, mobile, atau desktop), serta estimasi waktu pengerjaan. Kami selalu memberikan opsi penawaran terbaik yang sesuai dengan anggaran dan kebutuhan bisnis Anda."
+						}
+					},
+					{
+						"@type": "Question",
+						"name": "Teknologi dan tools apa saja yang digunakan oleh EL Project?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "Kami menggunakan berbagai tumpukan teknologi dan tools modern seperti Javascript, React, SwiftUI, Next.js, Flutter, Node.js, Figma, AWS, Firebase, GitHub, Supabase, Canva, Python, TypeScript, TanStack Start, TailwindCSS, dan Nitro/Vercel serverless."
+						}
+					},
+					{
+						"@type": "Question",
+						"name": "Apakah EL Project menyediakan layanan pasca-pembuatan (maintenance & support)?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "Ya, setiap proyek yang kami kerjakan dilengkapi dengan masa garansi pemeliharaan (maintenance) gratis untuk memastikan aplikasi berjalan lancar dan bebas dari bug. Kami juga menawarkan paket dukungan jangka panjang untuk pembaruan fitur atau kapasitas server."
+						}
+					},
+					{
+						"@type": "Question",
+						"name": "Apakah EL Project menyediakan kursus atau kelas belajar pemrograman?",
+						"acceptedAnswer": {
+							"@type": "Answer",
+							"text": "Ya, kami menyediakan layanan kursus dan mentoring belajar pemrograman intensif secara terarah dari pemula (nol) hingga tingkat mahir (sampai bisa) untuk menguasai teknologi modern sesuai standar kebutuhan industri."
+						}
+					}
+				]
+			})
+		}]
 	}),
 	shellComponent: RootShell,
 	component: RootComponent,
@@ -304,17 +288,51 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 function RootShell({ children }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("html", {
 		lang: "en",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("head", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HeadContent, {}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("body", { children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("noscript", { dangerouslySetInnerHTML: { __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W475F8Z5" height="0" width="0" style="display:none;visibility:hidden"></iframe>` } }),
-			children,
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Scripts, {})
-		] })]
+		suppressHydrationWarning: true,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("head", {
+			suppressHydrationWarning: true,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HeadContent, {})
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("body", {
+			suppressHydrationWarning: true,
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("noscript", { dangerouslySetInnerHTML: { __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W475F8Z5" height="0" width="0" style="display:none;visibility:hidden"></iframe>` } }),
+				children,
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Scripts, {})
+			]
+		})]
 	});
 }
 function RootComponent() {
 	const { queryClient } = Route$2.useRouteContext();
 	(0, import_react.useEffect)(() => {
-		if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").then(() => {}).catch(() => {});
+		if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+		try {
+			const w = window;
+			w.dataLayer = w.dataLayer || [];
+			w.dataLayer.push({
+				"gtm.start": Date.now(),
+				event: "gtm.js"
+			});
+			if (!document.getElementById("gtm-script")) {
+				const gtmScript = document.createElement("script");
+				gtmScript.id = "gtm-script";
+				gtmScript.async = true;
+				gtmScript.src = "https://www.googletagmanager.com/gtm.js?id=GTM-W475F8Z5";
+				document.head.appendChild(gtmScript);
+			}
+			if (!document.getElementById("ga-script")) {
+				const gaScript = document.createElement("script");
+				gaScript.id = "ga-script";
+				gaScript.async = true;
+				gaScript.src = "https://www.googletagmanager.com/gtag/js?id=G-6VKWPQVQPQ";
+				document.head.appendChild(gaScript);
+				function gtag(...args) {
+					w.dataLayer.push(args);
+				}
+				gtag("js", /* @__PURE__ */ new Date());
+				gtag("config", "G-6VKWPQVQPQ");
+			}
+		} catch {}
 	}, []);
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(QueryClientProvider, {
 		client: queryClient,
@@ -379,4 +397,4 @@ var getRouter = () => {
 	});
 };
 //#endregion
-export { getRouter, router_CDulqV41_exports as t };
+export { getRouter, router_qia6fsCH_exports as t };
