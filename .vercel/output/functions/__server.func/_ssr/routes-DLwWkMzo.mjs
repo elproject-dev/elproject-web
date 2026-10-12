@@ -3,7 +3,7 @@ import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tan
 import { d as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { _ as ChevronRight, a as Settings, b as CalendarCheck, c as School, d as Menu, f as LayoutTemplate, g as ClockArrowUp, h as CodeXml, i as Shield, l as PenTool, m as Code, n as Star, o as Server, p as Globe, r as ShoppingCart, s as Search, t as X, u as Palette, v as ChartLine } from "../_libs/lucide-react.mjs";
 import { t as LuPaintbrushVertical } from "../_libs/react-icons.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-COM-swxX.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DLwWkMzo.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function useReveal() {
@@ -394,7 +394,9 @@ var testimonials = [
 ];
 var AnimatedCounter = ({ end, suffix = "", decimals = 0 }) => {
 	const [count, setCount] = (0, import_react.useState)(0);
+	const [isMounted, setIsMounted] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
+		setIsMounted(true);
 		let startTimestamp = null;
 		const duration = 4500;
 		const step = (timestamp) => {
@@ -406,6 +408,7 @@ var AnimatedCounter = ({ end, suffix = "", decimals = 0 }) => {
 		};
 		requestAnimationFrame(step);
 	}, [end]);
+	if (!isMounted) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: `${end.toFixed(decimals)}${suffix}` });
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 		suppressHydrationWarning: true,
 		children: `${count.toFixed(decimals)}${suffix}`
@@ -414,18 +417,23 @@ var AnimatedCounter = ({ end, suffix = "", decimals = 0 }) => {
 var TypingHighlight = () => {
 	const [index, setIndex] = (0, import_react.useState)(0);
 	const [hasStarted, setHasStarted] = (0, import_react.useState)(false);
+	const [isMounted, setIsMounted] = (0, import_react.useState)(false);
 	const containerRef = (0, import_react.useRef)(null);
 	const text1 = "Kami merancang, membangun ";
 	const text2 = "Aplikasi & Server";
 	const text3 = "Mobile, Web Apps, IOS, Android, Desktop Apps dan Website Modern";
 	const text4 = "siap mengangkat bisnis Anda ke level berikutnya";
 	(0, import_react.useEffect)(() => {
+		setIsMounted(true);
+	}, []);
+	(0, import_react.useEffect)(() => {
+		if (!isMounted) return;
 		const observer = new IntersectionObserver(([entry]) => {
 			if (entry.isIntersecting && !hasStarted) setHasStarted(true);
 		}, { threshold: .3 });
 		if (containerRef.current) observer.observe(containerRef.current);
 		return () => observer.disconnect();
-	}, [hasStarted]);
+	}, [hasStarted, isMounted]);
 	(0, import_react.useEffect)(() => {
 		if (!hasStarted) return;
 		let timer;
@@ -453,6 +461,26 @@ var TypingHighlight = () => {
 	const end1 = 26;
 	const end2 = 43;
 	const end3 = 106;
+	if (!isMounted) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "w-full max-w-4xl mx-auto text-center reveal-up reveal",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
+				children: [text1, /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "text-gradient font-bold",
+					children: text2
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]",
+				children: text3
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]",
+				children: text4
+			})
+		]
+	});
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		ref: containerRef,
 		suppressHydrationWarning: true,

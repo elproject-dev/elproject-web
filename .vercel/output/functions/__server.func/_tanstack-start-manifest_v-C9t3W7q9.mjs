@@ -1,24 +1,24 @@
-//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-CzlgTm7Y.js
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-C9t3W7q9.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/home/elproject/Desktop/elproject/elproject-web/src/routes/__root.tsx",
 		children: ["/", "/blog"],
-		preloads: ["/assets/index-Dgt3PE0W.js"],
+		preloads: ["/assets/index-CGyaWqdW.js"],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-Dgt3PE0W.js"
+			src: "/assets/index-CGyaWqdW.js"
 		} }]
 	},
 	"/": {
 		filePath: "/home/elproject/Desktop/elproject/elproject-web/src/routes/index.tsx",
 		children: void 0,
-		preloads: ["/assets/routes-CPRvq-O6.js", "/assets/x-Dknb1KNW.js"]
+		preloads: ["/assets/routes-W5KZ715l.js", "/assets/x-CY79sc2v.js"]
 	},
 	"/blog": {
 		filePath: "/home/elproject/Desktop/elproject/elproject-web/src/routes/blog.tsx",
 		children: void 0,
-		preloads: ["/assets/blog-CGospC5z.js", "/assets/x-Dknb1KNW.js"]
+		preloads: ["/assets/blog-ymgaijA1.js", "/assets/x-CY79sc2v.js"]
 	}
 } });
 //#endregion

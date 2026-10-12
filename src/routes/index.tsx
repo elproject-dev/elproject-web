@@ -123,8 +123,10 @@ const testimonials = [
 
 const AnimatedCounter = ({ end, suffix = "", decimals = 0 }: { end: number, suffix?: string, decimals?: number }) => {
   const [count, setCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     let startTimestamp: number | null = null;
     const duration = 4500; // Durasi sangat pelan (4.5 detik)
 
@@ -144,12 +146,15 @@ const AnimatedCounter = ({ end, suffix = "", decimals = 0 }: { end: number, suff
     requestAnimationFrame(step);
   }, [end]);
 
+  // Return static value on server, animated value on client
+  if (!isMounted) return <span>{`${end.toFixed(decimals)}${suffix}`}</span>;
   return <span suppressHydrationWarning>{`${count.toFixed(decimals)}${suffix}`}</span>;
 };
 
 const TypingHighlight = () => {
   const [index, setIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const text1 = "Kami merancang, membangun ";
@@ -158,8 +163,13 @@ const TypingHighlight = () => {
   const text4 = "siap mengangkat bisnis Anda ke level berikutnya";
   const fullText = text1 + text2 + text3 + text4;
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Pantau apakah elemen sudah terlihat di layar
   useEffect(() => {
+    if (!isMounted) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasStarted) {
@@ -174,7 +184,7 @@ const TypingHighlight = () => {
     }
 
     return () => observer.disconnect();
-  }, [hasStarted]);
+  }, [hasStarted, isMounted]);
 
   useEffect(() => {
     if (!hasStarted) return;
@@ -207,6 +217,23 @@ const TypingHighlight = () => {
   const end1 = text1.length;
   const end2 = end1 + text2.length;
   const end3 = end2 + text3.length;
+
+  // On server (SSR) or before mount, render static text to prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <div className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
+        <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+          {text1}<span className="text-gradient font-bold">{text2}</span>
+        </p>
+        <p className="text-base md:text-2xl font-bold text-foreground my-2 min-h-[2rem]">
+          {text3}
+        </p>
+        <p className="text-sm md:text-xl font-semibold text-foreground/90 min-h-[1.75rem]">
+          {text4}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} suppressHydrationWarning className="w-full max-w-4xl mx-auto text-center reveal-up reveal">
