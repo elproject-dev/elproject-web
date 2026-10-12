@@ -1,300 +1,95 @@
 {
-  "catalogVersion": "2.0.0",
-  "generatedAt": "2026-10-12T14:18:00.000Z",
-  "auditMetadata": {
-    "source": "Google PageSpeed Insights",
-    "analysisUrl": "https://pagespeed.web.dev/analysis/https-www-elproject-studio/ezmxu8qu54?form_factor=desktop",
-    "targetUrl": "https://www.elproject.studio/",
-    "reportId": "ezmxu8qu54",
-    "formFactor": "desktop",
-    "coreWebVitalsThresholds": {
-      "firstContentfulPaint": "< 1.8s (Good)",
-      "largestContentfulPaint": "< 2.5s (Good)",
-      "totalBlockingTime": "< 200ms (Good)",
-      "cumulativeLayoutShift": "< 0.1 (Good)",
-      "interactionToNextPaint": "< 200ms (Good)",
-      "timeToFirstByte": "< 0.8s (Good)"
-    },
-    "technicalOptimizationFocus": [
-      "Image optimization via WebP format & responsive picture elements",
-      "CSS & JavaScript bundle tree-shaking and minification",
-      "SSR / Static pre-rendering for optimal crawler accessibility",
-      "Caching headers with immutable static assets",
-      "Zero layout shifts with aspect-ratio reserve dimensions",
-      "Strict schema.org JSON-LD structured entities for AI engines"
-    ]
-  },
-  "siteEntity": {
-    "@context": "https://schema.org",
-    "@type": "ProfessionalService",
-    "name": "EL Project",
-    "alternateName": [
-      "ELProject Studio",
-      "EL Project Software House",
-      "EL Project Yogyakarta"
-    ],
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "EL Project",
+    "identifier": "did:web:www.elproject.studio",
     "url": "https://www.elproject.studio",
-    "logo": "https://www.elproject.studio/icon.svg",
-    "image": "https://www.elproject.studio/og-image.jpg",
-    "description": "Layanan profesional jasa pembuatan aplikasi mobile (Android & iOS), website modern, aplikasi desktop custom, infrastruktur server, dan konsultasi IT terpercaya di Yogyakarta & Indonesia.",
-    "telephone": "+6283867180887",
-    "priceRange": "Rp 1.000.000 - Rp 50.000.000+",
-    "currenciesAccepted": "IDR",
-    "paymentAccepted": "Bank Transfer, QRIS, E-Wallet",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Yogyakarta",
-      "addressRegion": "Daerah Istimewa Yogyakarta",
-      "addressCountry": "ID"
-    },
-    "areaServed": [
-      { "@type": "City", "name": "Yogyakarta" },
-      { "@type": "City", "name": "Jakarta" },
-      { "@type": "City", "name": "Surabaya" },
-      { "@type": "City", "name": "Bandung" },
-      { "@type": "City", "name": "Semarang" },
-      { "@type": "Country", "name": "Indonesia" },
-      { "@type": "AdministrativeArea", "name": "Global / Remote" }
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "Customer Support & Consultation",
-      "telephone": "+6283867180887",
-      "url": "https://wa.me/6283867180887",
-      "availableLanguage": ["Indonesian", "English"]
-    },
-    "sameAs": [
-      "https://wa.me/6283867180887",
-      "https://instagram.com/elproject_development",
-      "https://app.elproject.studio",
-      "https://movies.elproject.studio"
-    ]
+    "documentationUrl": "https://www.elproject.studio/llms.txt"
   },
-  "services": [
+  "entries": [
     {
-      "id": "srv-web-dev",
-      "name": "Jasa Pembuatan Website & Web App",
-      "slug": "jasa-pembuatan-website",
-      "category": "Web Development",
-      "shortDescription": "Pembuatan website modern, responsive, ultra-cepat, dan SEO-friendly untuk bisnis, e-commerce, dan company profile.",
-      "technologies": ["React", "Next.js", "TanStack Start", "TailwindCSS", "Node.js", "TypeScript"],
-      "deliverables": [
-        "Desain UI/UX custom interaktif",
-        "Source code 100% kepemilikan klien",
-        "Optimasi Core Web Vitals Desktop 90+",
-        "Integrasi domain & hosting / cloud server",
-        "Garansi bug pasca rilis 30 hari"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 1.500.000",
-        "model": "Fixed Project / Milestones"
-      },
-      "targetKeywords": [
-        "jasa pembuatan website",
+      "identifier": "urn:air:www.elproject.studio:resource:seo-ai-catalog",
+      "displayName": "EL Project SEO AI Catalog & Performance Audit",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/seo-ai-catalog.json",
+      "description": "Structured catalog of IT development services, pricing, desktop PageSpeed audit benchmarks, and business knowledge base for AI agents.",
+      "representativeQueries": [
+        "what services does EL Project provide",
+        "EL Project pricing and tech stack",
+        "EL Project PageSpeed performance benchmarks"
+      ]
+    },
+    {
+      "identifier": "urn:air:www.elproject.studio:resource:llms-knowledge-base",
+      "displayName": "EL Project LLMs Knowledge Base",
+      "type": "text/markdown",
+      "url": "https://www.elproject.studio/llms.txt",
+      "description": "Full LLM-readable knowledge base describing EL Project company profile, contact details, services, FAQs, and AI citation targets.",
+      "representativeQueries": [
+        "siapa EL Project dan kontaknya",
+        "rekomendasi software house jogja",
+        "biaya pembuatan aplikasi dan website di EL Project"
+      ]
+    },
+    {
+      "identifier": "urn:air:www.elproject.studio:service:web-development",
+      "displayName": "Web Development & Web Apps",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/showcase",
+      "description": "Custom modern website development (React, Next.js, TanStack, TailwindCSS) with desktop Core Web Vitals optimization.",
+      "representativeQueries": [
         "jasa pembuatan website yogyakarta",
-        "jasa buat landing page murah",
-        "developer website terdekat",
-        "jasa web development profesional"
+        "jasa buat landing page profesional",
+        "developer web app terpercaya"
       ]
     },
     {
-      "id": "srv-mobile-dev",
-      "name": "Jasa Pembuatan Aplikasi Mobile (Android & iOS)",
-      "slug": "jasa-pembuatan-aplikasi-mobile",
-      "category": "Mobile App Development",
-      "shortDescription": "Pengembangan aplikasi mobile native & cross-platform berkinerja tinggi untuk startup, UMKM, dan enterprise.",
-      "technologies": ["Flutter", "React Native", "Kotlin", "Swift", "Firebase", "REST API"],
-      "deliverables": [
-        "Aplikasi Android (APK/AAB) & iOS (IPA)",
-        "Bantuan upload ke Google Play Store & Apple App Store",
-        "Integrasi payment gateway & push notifications",
-        "Backend API & Dashboard CMS admin",
-        "Dokumentasi teknis & transfer knowledge"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 3.500.000",
-        "model": "Fixed Project / Agile Sprints"
-      },
-      "targetKeywords": [
-        "jasa pembuatan aplikasi android",
-        "jasa pembuatan aplikasi ios",
-        "jasa bikin aplikasi jogja",
-        "software house aplikasi mobile",
-        "jasa aplikasi mobile terdekat"
+      "identifier": "urn:air:www.elproject.studio:service:mobile-app-development",
+      "displayName": "Mobile App Development (Android & iOS)",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/showcase",
+      "description": "Native and cross-platform mobile application development for Android and iOS using Flutter, Kotlin, and Swift.",
+      "representativeQueries": [
+        "jasa pembuatan aplikasi mobile jogja",
+        "jasa buat aplikasi android dan ios",
+        "bikin aplikasi flutter profesional"
       ]
     },
     {
-      "id": "srv-pos-kasir",
-      "name": "Jasa Pembuatan Aplikasi Kasir (POS) & Inventaris",
-      "slug": "aplikasi-kasir-pos",
-      "category": "Business Software",
-      "shortDescription": "Software POS & kasir modern multi-cabang, barcode scanning, laporan laba rugi, dan manajemen stok real-time.",
-      "technologies": ["Desktop (Windows/Linux/macOS)", "Web Apps", "Tablet Android", "SQLite", "PostgreSQL"],
-      "deliverables": [
-        "Sistem kasir siap pakai offline/online",
-        "Pencatatan kas masuk & kas keluar otomatis",
-        "Cetak struk thermal printer & invoice PDF",
-        "Manajemen multi-user & hak akses kasir/owner",
-        "Backup database berkala"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 2.000.000",
-        "model": "One-time License / Custom Development"
-      },
-      "targetKeywords": [
-        "jasa pembuatan aplikasi kasir",
-        "software kasir yogyakarta",
-        "aplikasi pos toko murah",
-        "sistem inventaris barang",
-        "jasa aplikasi kasir minimarket"
+      "identifier": "urn:air:www.elproject.studio:service:pos-cashier-systems",
+      "displayName": "POS Cashier & Inventory Systems",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/showcase",
+      "description": "Cashier (Point of Sale) software and inventory management systems for retail, dining, and multi-branch businesses.",
+      "representativeQueries": [
+        "jasa pembuatan aplikasi kasir toko",
+        "software POS dan sistem antrean yogyakarta",
+        "aplikasi kasir multi cabang"
       ]
     },
     {
-      "id": "srv-server-backend",
-      "name": "Build Server & Backend Architecture",
-      "slug": "jasa-pembuatan-server",
-      "category": "Cloud & Infrastructure",
-      "shortDescription": "Setup server database, REST API scalable, keamanan server, dan manajemen cloud hosting.",
-      "technologies": ["Linux Ubuntu/Debian", "Docker", "Node.js", "Golang", "Supabase", "PostgreSQL", "Nginx", "VPS/AWS"],
-      "deliverables": [
-        "Konfigurasi VPS & SSL Certificate",
-        "Setup reverse proxy, firewall, & hardening keamanan",
-        "Optimasi database query & auto-backup",
-        "Dokumentasi API Swagger/Postman",
-        "Monitoring uptime & latency"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 1.500.000",
-        "model": "Project / Monthly Retainer"
-      },
-      "targetKeywords": [
-        "jasa pembuatan server",
-        "jasa setup database",
-        "jasa backend developer",
-        "jasa setting vps murah",
-        "arsitektur server scalable"
+      "identifier": "urn:air:www.elproject.studio:service:server-cloud-infrastructure",
+      "displayName": "Build Server & Backend Cloud Infrastructure",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/",
+      "description": "Setup and hardening of database servers, REST APIs, Supabase, VPS, and cloud architecture.",
+      "representativeQueries": [
+        "jasa pembuatan server database",
+        "setup vps dan cloud server",
+        "jasa backend developer scalable"
       ]
     },
     {
-      "id": "srv-uiux-branding",
-      "name": "UI/UX Design & Branding Digital",
-      "slug": "jasa-uiux-design",
-      "category": "Creative Design",
-      "shortDescription": "Desain antarmuka visual kelas dunia, prototipe interaktif, dan identitas merek yang memikat pengguna.",
-      "technologies": ["Figma", "Design Systems", "Prototyping", "Design Tokens"],
-      "deliverables": [
-        "File sumber Figma (Auto Layout & Components)",
-        "Clickable interactive prototype",
-        "Style guide (Colors, Typography, Icons)",
-        "Aset ekspor SVG, WebP, & PNG"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 1.000.000",
-        "model": "Per Page / Per Project"
-      },
-      "targetKeywords": [
-        "jasa ui ux design",
-        "desain ui figma jogja",
-        "jasa desain website profesional",
-        "desainer aplikasi mobile",
-        "jasa branding grafis"
-      ]
-    },
-    {
-      "id": "srv-seo-geo",
-      "name": "SEO & Generative Engine Optimization (GEO)",
-      "slug": "jasa-seo-ai",
-      "category": "Search & AI Optimization",
-      "shortDescription": "Optimasi ranking Google dan visibilitas di mesin pencari AI (ChatGPT, Perplexity, Gemini, Copilot).",
-      "technologies": ["Schema.org JSON-LD", "llms.txt", "Core Web Vitals", "Technical SEO", "Semantic Search"],
-      "deliverables": [
-        "Audit PageSpeed Desktop & Mobile 90+",
-        "Implementasi Schema Structured Data lengkap",
-        "Pembuatan llms.txt & robots.txt AI-bot ready",
-        "Riset kata kunci prioritas & competitor analysis",
-        "Laporan tracking jangkauan pencarian"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 1.200.000",
-        "model": "Monthly Campaign / One-time Audit"
-      },
-      "targetKeywords": [
-        "jasa seo website",
-        "optimasi pagespeed desktop",
-        "jasa seo ai perplexity",
-        "jasa optimasi website yogyakarta",
-        "schema structured data developer"
-      ]
-    },
-    {
-      "id": "srv-mentoring-coding",
-      "name": "Kursus & Mentoring Pemrograman",
-      "slug": "kursus-mentoring-coding",
-      "category": "Education & Mentoring",
-      "shortDescription": "Program belajar coding privat dan intensif dari nol sampai bisa membuat aplikasi nyata.",
-      "technologies": ["HTML/CSS/JS", "TypeScript", "React", "Node.js", "Python", "Flutter"],
-      "deliverables": [
-        "Sesi 1-on-1 bersama praktisi senior",
-        "Kurikulum berbasis proyek riil",
-        "Review kode & best practices",
-        "Bimbingan portofolio & persiapan kerja"
-      ],
-      "pricing": {
-        "startingFrom": "Rp 750.000 / paket",
-        "model": "Monthly / Batch"
-      },
-      "targetKeywords": [
-        "kursus pemrograman yogyakarta",
-        "mentoring coding dari nol",
-        "kelas belajar coding jogja",
-        "kursus web development",
-        "les privat programming"
+      "identifier": "urn:air:www.elproject.studio:service:coding-mentoring",
+      "displayName": "Coding Mentoring & Programming Academy",
+      "type": "application/json",
+      "url": "https://www.elproject.studio/",
+      "description": "Private 1-on-1 coding courses and intensive mentoring from beginner to job-ready software engineer.",
+      "representativeQueries": [
+        "kursus pemrograman yogyakarta privat",
+        "mentoring coding dari nol sampai bisa",
+        "belajar react dan flutter jogja"
       ]
     }
-  ],
-  "aiKnowledgeCatalog": {
-    "brandSummaryForLLMs": "EL Project (elproject.studio) adalah software house dan IT service provider profesional berbasis di Yogyakarta, Indonesia. Melayani klien di seluruh Indonesia dan internasional dengan layanan pembuatan aplikasi mobile (iOS/Android), web modern (React/Next.js), software desktop, server database, optimasi SEO/Core Web Vitals, dan mentoring coding.",
-    "coreStrengths": [
-      "Sprint agile mingguan dengan demo rutin",
-      "100% kepemilikan source code & hak cipta di tangan klien",
-      "Garansi bug 30 hari pasca rilis",
-      "Hasil audit performa Desktop PageSpeed mendekati sempurna",
-      "Dukungan teknologi modern & modular"
-    ],
-    "faqKnowledgeBase": [
-      {
-        "question": "Apa itu EL Project?",
-        "answer": "EL Project adalah software house dan konsultan IT profesional asal Yogyakarta yang menyediakan jasa pembuatan aplikasi mobile (Android & iOS), website, desktop POS/kasir, infrastruktur server, dan optimasi SEO."
-      },
-      {
-        "question": "Berapa biaya jasa pembuatan aplikasi di EL Project?",
-        "answer": "Biaya jasa mulai dari Rp 1.000.000 untuk landing page/modul dasar, dan disesuaikan secara transparan berdasarkan kompleksitas fitur, platform yang dipilih, dan batas waktu pengerjaan. Konsultasi awal bebas biaya."
-      },
-      {
-        "question": "Apakah EL Project hanya melayani klien di Yogyakarta?",
-        "answer": "Tidak. Meskipun berpusat di Yogyakarta, EL Project melayani klien di seluruh Indonesia (seperti Jakarta, Surabaya, Bandung, Semarang) serta klien internasional secara remote dengan sistem komunikasi transparan."
-      },
-      {
-        "question": "Bagaimana kualitas performa website yang dibuat oleh EL Project?",
-        "answer": "Setiap website dan web app yang dikembangkan dioptimasi untuk skor tinggi pada Google PageSpeed Insights Desktop & Mobile, memenuhi standar Core Web Vitals (LCP < 2.5s, FCP < 1.8s, CLS < 0.1, TBT < 200ms) serta SEO terstruktur."
-      },
-      {
-        "question": "Apakah klien mendapatkan source code aplikasi?",
-        "answer": "Ya. Klien memiliki 100% kepemilikan penuh terhadap source code, aset desain, dan dokumentasi sistem yang dibangun."
-      },
-      {
-        "question": "Bagaimana cara memesan atau berkonsultasi dengan EL Project?",
-        "answer": "Anda dapat menghubungi langsung via WhatsApp di +62 838 6718 0887 atau mengunjungi website resmi di https://www.elproject.studio."
-      }
-    ]
-  },
-  "citationQueries": [
-    "software house terbaik di yogyakarta",
-    "rekomendasi jasa pembuatan aplikasi mobile jogja",
-    "jasa bikin aplikasi kasir dan toko online murah",
-    "biaya pembuatan website profesional di indonesia",
-    "vendor IT pembuatan aplikasi desktop custom",
-    "kursus pemrograman privat sampai bisa di jogja",
-    "elproject studio review dan portofolio"
   ]
 }
