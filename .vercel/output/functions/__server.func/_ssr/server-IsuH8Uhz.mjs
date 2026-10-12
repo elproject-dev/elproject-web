@@ -556,7 +556,7 @@ var globalObj$1 = globalThis;
 if (!globalObj$1[GLOBAL_EVENT_STORAGE_KEY]) globalObj$1[GLOBAL_EVENT_STORAGE_KEY] = new AsyncLocalStorage();
 var eventStorage = globalObj$1[GLOBAL_EVENT_STORAGE_KEY];
 function isPromiseLike(value) {
-	return typeof value.then === "function";
+	return (typeof value === "object" || typeof value === "function") && value !== null && typeof value.then === "function";
 }
 function getSetCookieValues(headers) {
 	const headersWithSetCookie = headers;
@@ -573,13 +573,23 @@ function mergeEventResponseHeaders(response, event) {
 	for (const cookie of responseSetCookies) response.headers.append("set-cookie", cookie);
 	for (const cookie of eventSetCookies) response.headers.append("set-cookie", cookie);
 }
-function attachResponseHeaders(value, event) {
-	if (isPromiseLike(value)) return value.then((resolved) => {
-		if (resolved instanceof Response) mergeEventResponseHeaders(resolved, event);
-		return resolved;
-	});
-	if (value instanceof Response) mergeEventResponseHeaders(value, event);
-	return value;
+function finalizeResponse(value, event) {
+	const response = ensureResponse(value);
+	mergeEventResponseHeaders(response, event);
+	return response;
+}
+function finalizeMaybeResponse(value, event) {
+	if (isPromiseLike(value)) return Promise.resolve(value).then((resolved) => finalizeResponse(resolved, event), (error) => finalizeResponse(handleResponseError(error), event));
+	return finalizeResponse(value, event);
+}
+function ensureResponse(value) {
+	if (value instanceof Response) return value;
+	return new Response("Internal Server Error", { status: 500 });
+}
+function handleResponseError(error) {
+	if (error instanceof Response) return error;
+	if (error instanceof Error) throw error;
+	return new Response("Internal Server Error", { status: 500 });
 }
 function requestHandler(handler) {
 	return (request, requestOpts) => {
@@ -593,7 +603,13 @@ function requestHandler(handler) {
 			});
 			throw error;
 		}
-		return toResponse(attachResponseHeaders(eventStorage.run({ h3Event }, () => handler(request, requestOpts)), h3Event), h3Event);
+		let response;
+		try {
+			response = eventStorage.run({ h3Event }, () => handler(request, requestOpts));
+		} catch (error) {
+			response = handleResponseError(error);
+		}
+		return toResponse(finalizeMaybeResponse(response, h3Event), h3Event);
 	};
 }
 function getH3Event() {
@@ -612,79 +628,62 @@ function isNotFound(obj) {
 /** Stable identifier used for the root route in a route tree. */
 var rootRouteId = "__root__";
 /** Check whether a value is a TanStack Router redirect Response. */
-/** Check whether a value is a TanStack Router redirect Response. */
 function isRedirect(obj) {
 	return obj instanceof Response && !!obj.options;
 }
-/** True if value is a redirect with a resolved `href` location. */
-/** True if value is a redirect with a resolved `href` location. */
-function isResolvedRedirect(obj) {
-	return isRedirect(obj) && !!obj.options.href;
-}
 function dehydrateSsrMatchId(id) {
-	return id.replaceAll("~", "~~").replaceAll("\0", "~0").replaceAll("�", "~r").replaceAll("/", "\0");
+	return id.replaceAll("/", "#");
 }
-function createLRUCache(max) {
+/**
+* A fixed-capacity cache using the SIEVE eviction algorithm
+* (https://cachemon.github.io/SIEVE-website/).
+*
+* Entries live in the Map's FIFO insertion order; a hit only flips a `visited`
+* bit instead of relinking the entry, which makes `get` (by far the hottest
+* operation here) one `Map.get` plus a boolean store. Eviction sweeps a `hand`
+* from the oldest entry towards the newest, clearing `visited` bits until it
+* finds an unvisited entry to drop, so entries touched since the last sweep
+* survive one more round. This keeps LRU-like hit ratios while being
+* scan-resistant.
+*/
+function createSieveCache(max) {
 	const cache = /* @__PURE__ */ new Map();
-	let oldest;
+	let hand;
 	let newest;
-	const touch = (entry) => {
-		if (!entry.next) return;
-		if (!entry.prev) {
-			entry.next.prev = void 0;
-			oldest = entry.next;
-			entry.next = void 0;
-			if (newest) {
-				entry.prev = newest;
-				newest.next = entry;
-			}
-		} else {
-			entry.prev.next = entry.next;
-			entry.next.prev = entry.prev;
-			entry.next = void 0;
-			if (newest) {
-				newest.next = entry;
-				entry.prev = newest;
-			}
-		}
-		newest = entry;
-	};
 	return {
 		get(key) {
 			const entry = cache.get(key);
-			if (!entry) return void 0;
-			touch(entry);
+			if (!entry) return;
+			entry.visited = true;
 			return entry.value;
 		},
 		set(key, value) {
-			if (cache.size >= max && oldest) {
-				const toDelete = oldest;
-				cache.delete(toDelete.key);
-				if (toDelete.next) {
-					oldest = toDelete.next;
-					toDelete.next.prev = void 0;
-				}
-				if (toDelete === newest) newest = void 0;
-			}
 			const existing = cache.get(key);
 			if (existing) {
 				existing.value = value;
-				touch(existing);
-			} else {
-				const entry = {
-					key,
-					value,
-					prev: newest
-				};
-				if (newest) newest.next = entry;
-				newest = entry;
-				if (!oldest) oldest = entry;
-				cache.set(key, entry);
+				return;
 			}
+			if (cache.size >= max) {
+				let node = hand?.next().value;
+				while (!node || node.visited) {
+					if (node) node.visited = false;
+					else hand = cache.values();
+					node = hand.next().value;
+				}
+				if (node === newest) hand = void 0;
+				cache.delete(node.key);
+			}
+			const entry = {
+				key,
+				value,
+				visited: false
+			};
+			newest = entry;
+			cache.set(key, entry);
 		},
 		clear() {
 			cache.clear();
-			oldest = void 0;
+			hand = void 0;
 			newest = void 0;
 		}
 	};
@@ -702,217 +701,127 @@ function executeRewriteInput(rewrite, url) {
 	return url;
 }
 var stateIndexKey = "__TSR_index";
-function createHistory(opts) {
-	let location = opts.getLocation();
-	const subscribers = /* @__PURE__ */ new Set();
-	const notify = (action) => {
-		location = opts.getLocation();
-		subscribers.forEach((subscriber) => subscriber({
-			location,
-			action
-		}));
-	};
-	const handleIndexChange = (action) => {
-		if (opts.notifyOnIndexChange ?? true) notify(action);
-		else location = opts.getLocation();
-	};
-	const tryNavigation = async ({ task, navigateOpts, ...actionInfo }) => {
-		if (navigateOpts?.ignoreBlocker ?? false) {
-			task();
-			return;
-		}
-		const blockers = opts.getBlockers?.() ?? [];
-		const isPushOrReplace = actionInfo.type === "PUSH" || actionInfo.type === "REPLACE";
-		if (typeof document !== "undefined" && blockers.length && isPushOrReplace) for (const blocker of blockers) {
-			const nextLocation = parseHref(actionInfo.path, actionInfo.state);
-			if (await blocker.blockerFn({
-				currentLocation: location,
-				nextLocation,
-				action: actionInfo.type
-			})) {
-				opts.onBlocked?.();
-				return;
-			}
-		}
-		task();
-	};
-	return {
-		get location() {
-			return location;
-		},
-		get length() {
-			return opts.getLength();
-		},
-		subscribers,
-		subscribe: (cb) => {
-			subscribers.add(cb);
-			return () => {
-				subscribers.delete(cb);
-			};
-		},
-		push: (path, state, navigateOpts) => {
-			const currentIndex = location.state[stateIndexKey];
-			state = assignKeyAndIndex(currentIndex + 1, state);
-			tryNavigation({
-				task: () => {
-					opts.pushState(path, state);
-					notify({ type: "PUSH" });
-				},
-				navigateOpts,
-				type: "PUSH",
-				path,
-				state
-			});
-		},
-		replace: (path, state, navigateOpts) => {
-			const currentIndex = location.state[stateIndexKey];
-			state = assignKeyAndIndex(currentIndex, state);
-			tryNavigation({
-				task: () => {
-					opts.replaceState(path, state);
-					notify({ type: "REPLACE" });
-				},
-				navigateOpts,
-				type: "REPLACE",
-				path,
-				state
-			});
-		},
-		go: (index, navigateOpts) => {
-			tryNavigation({
-				task: () => {
-					opts.go(index);
-					handleIndexChange({
-						type: "GO",
-						index
-					});
-				},
-				navigateOpts,
-				type: "GO"
-			});
-		},
-		back: (navigateOpts) => {
-			tryNavigation({
-				task: () => {
-					opts.back(navigateOpts?.ignoreBlocker ?? false);
-					handleIndexChange({ type: "BACK" });
-				},
-				navigateOpts,
-				type: "BACK"
-			});
-		},
-		forward: (navigateOpts) => {
-			tryNavigation({
-				task: () => {
-					opts.forward(navigateOpts?.ignoreBlocker ?? false);
-					handleIndexChange({ type: "FORWARD" });
-				},
-				navigateOpts,
-				type: "FORWARD"
-			});
-		},
-		canGoBack: () => location.state[stateIndexKey] !== 0,
-		createHref: (str) => opts.createHref(str),
-		block: (blocker) => {
-			if (!opts.setBlockers) return () => {};
-			const blockers = opts.getBlockers?.() ?? [];
-			opts.setBlockers([...blockers, blocker]);
-			return () => {
-				const blockers = opts.getBlockers?.() ?? [];
-				opts.setBlockers?.(blockers.filter((b) => b !== blocker));
-			};
-		},
-		flush: () => opts.flush?.(),
-		destroy: () => opts.destroy?.(),
-		notify
-	};
-}
-function assignKeyAndIndex(index, state) {
-	if (!state) state = {};
-	const key = createRandomKey();
-	return {
-		...state,
-		key,
-		__TSR_key: key,
-		[stateIndexKey]: index
-	};
-}
 /**
-* Create an in-memory history implementation.
-* Ideal for server rendering, tests, and non-DOM environments.
-* @link https://tanstack.com/router/latest/docs/framework/react/guide/history-types
+* Turn protocol-relative inputs such as "//evil.example" into paths
+* such as "/evil.example", keeping navigation on the current origin.
+*
+* For HTTP(S) URLs, WHATWG parsing ignores leading C0 controls and spaces,
+* removes tabs/newlines, and treats backslashes as slashes, so inputs like
+* "/\evil.example" also need normalization. This only allocates when those
+* rules would make the input protocol-relative.
 */
-function createMemoryHistory(opts = { initialEntries: ["/"] }) {
-	const entries = opts.initialEntries;
-	let index = opts.initialIndex ? Math.min(Math.max(opts.initialIndex, 0), entries.length - 1) : entries.length - 1;
-	const states = entries.map((_entry, index) => assignKeyAndIndex(index, void 0));
-	const getLocation = () => parseHref(entries[index], states[index]);
-	let blockers = [];
-	const _getBlockers = () => blockers;
-	const _setBlockers = (newBlockers) => blockers = newBlockers;
-	return createHistory({
-		getLocation,
-		getLength: () => entries.length,
-		pushState: (path, state) => {
-			if (index < entries.length - 1) {
-				entries.splice(index + 1);
-				states.splice(index + 1);
-			}
-			states.push(state);
-			entries.push(path);
-			index = Math.max(entries.length - 1, 0);
-		},
-		replaceState: (path, state) => {
-			states[index] = state;
-			entries[index] = path;
-		},
-		back: () => {
-			index = Math.max(index - 1, 0);
-		},
-		forward: () => {
-			index = Math.min(index + 1, entries.length - 1);
-		},
-		go: (n) => {
-			index = Math.min(Math.max(index + n, 0), entries.length - 1);
-		},
-		createHref: (path) => path,
-		getBlockers: _getBlockers,
-		setBlockers: _setBlockers
-	});
+var protocolRelativePrefix = /^[\x00-\x20]*(?:[\\/][\t\n\r]*){2,}/;
+function normalizeProtocolRelative(url) {
+	const match = protocolRelativePrefix.exec(url);
+	return match ? "/" + url.slice(match[0].length) : url;
 }
-/**
-* Sanitize a path to prevent open redirect vulnerabilities.
-* Removes control characters and collapses leading double slashes.
-*/
-function sanitizePath(path) {
-	let sanitized = path.replace(/[\x00-\x1f\x7f]/g, "");
-	if (sanitized.startsWith("//")) sanitized = "/" + sanitized.replace(/^\/+/, "");
-	return sanitized;
+function normalizeHref(href) {
+	if (/[\x00-\x1f\x7f]/.test(href)) href = href.replace(/[\x00-\x1f\x7f]/g, (character) => "	\n\r".includes(character) ? "" : encodeURIComponent(character));
+	return normalizeProtocolRelative(href);
+}
+var noop = () => {};
+var ServerHistory = class {
+	constructor(location) {
+		this.location = location;
+	}
+	get length() {
+		return 1;
+	}
+	get subscribers() {
+		return this._subscribers ??= /* @__PURE__ */ new Set();
+	}
+	subscribe() {
+		return noop;
+	}
+	push() {}
+	replace() {}
+	go() {}
+	back() {}
+	forward() {}
+	canGoBack() {
+		return false;
+	}
+	createHref(href) {
+		return normalizeHref(href);
+	}
+	block() {
+		return noop;
+	}
+	flush() {}
+	destroy() {}
+	notify() {}
+	_getBlockers() {
+		return [];
+	}
+};
+/** A fixed request location; server navigation is a no-op. */
+function createServerHistory(href) {
+	return new ServerHistory(parseHref(href, void 0));
 }
 function parseHref(href, state) {
-	const sanitizedHref = sanitizePath(href);
+	const sanitizedHref = normalizeHref(href);
 	const hashIndex = sanitizedHref.indexOf("#");
 	const searchIndex = sanitizedHref.indexOf("?");
-	const addedKey = createRandomKey();
+	if (!state) {
+		const key = createRandomKey();
+		state = {
+			[stateIndexKey]: 0,
+			key,
+			__TSR_key: key
+		};
+	}
 	return {
 		href: sanitizedHref,
-		pathname: sanitizedHref.substring(0, hashIndex > 0 ? searchIndex > 0 ? Math.min(hashIndex, searchIndex) : hashIndex : searchIndex > 0 ? searchIndex : sanitizedHref.length),
-		hash: hashIndex > -1 ? sanitizedHref.substring(hashIndex) : "",
+		pathname: sanitizedHref.slice(0, hashIndex > -1 ? searchIndex > -1 ? Math.min(hashIndex, searchIndex) : hashIndex : searchIndex > -1 ? searchIndex : sanitizedHref.length),
+		hash: hashIndex > -1 ? sanitizedHref.slice(hashIndex) : "",
 		search: searchIndex > -1 ? sanitizedHref.slice(searchIndex, hashIndex === -1 ? void 0 : hashIndex) : "",
-		state: state || {
-			[stateIndexKey]: 0,
-			key: addedKey,
-			__TSR_key: addedKey
-		}
+		state
 	};
 }
 function createRandomKey() {
-	return (Math.random() + 1).toString(36).substring(7);
+	return (Math.random() + 1).toString(36).slice(7);
 }
 /** Return the structural lane through the first terminal render boundary. */
 function _getRenderedMatches(matches) {
 	const end = matches.findIndex((match) => match.status !== "success" || match._notFound) + 1;
 	return end && end < matches.length ? matches.slice(0, end) : matches;
+}
+function observeLate(callback, value) {
+	if (!callback) return;
+	try {
+		const result = callback(value);
+		if (result !== void 0) Promise.resolve(result).catch(() => {});
+	} catch {}
+}
+/**
+* Await `value` unless `signal` aborts first. A result that settles after the
+* abort is passed to `onLate` / `onLateError` instead.
+*
+* One abort listener per wait: SSR requests nest at most a few waits on one
+* signal, so pooling them was measurably slower than this.
+*/
+function waitForReason(value, signal, onLate, onLateError) {
+	const promise = Promise.resolve(value);
+	if (signal.aborted) {
+		promise.then((result) => observeLate(onLate, result), (error) => observeLate(onLateError, error));
+		return Promise.reject(signal.reason);
+	}
+	return new Promise((resolve, reject) => {
+		const abort = () => reject(signal.reason);
+		signal.addEventListener("abort", abort, { once: true });
+		promise.then((result) => {
+			signal.removeEventListener("abort", abort);
+			if (signal.aborted) observeLate(onLate, result);
+			else resolve(result);
+		}, (error) => {
+			signal.removeEventListener("abort", abort);
+			if (signal.aborted) observeLate(onLateError, error);
+			else reject(error);
+		});
+	});
+}
+function isPromise(value) {
+	return Boolean(value && typeof value === "object" && typeof value.then === "function");
 }
 /**
 * Re-encode characters that are unsafe in URL paths.
@@ -946,33 +855,58 @@ function decodeSegment(segment) {
 	}
 	return sanitizePathSegment(decoded);
 }
+/**
+* Extract the explicit URL scheme, including its colon, using WHATWG
+* normalization rules. This does not validate the rest of the URL.
+*
+* Returning `undefined` means "no explicit scheme", not "safe URL";
+* protocol-relative URLs such as "//evil.example" require a separate check.
+*/
+function getUrlScheme(url) {
+	if (url[0] === "/") return;
+	if (!url.includes(":")) return;
+	return /^[\x00-\x20]*([a-z][a-z\d+.\t\n\r-]*:)/i.exec(url)?.[1]?.replace(/[\t\n\r]/g, "").toLowerCase();
+}
+var protocolRelativePrefixRegex = /^[\x00-\x20]*[\\/][\t\n\r]*[\\/]/;
+/**
+* Check if a URL string uses a protocol that is not in the allowlist or is
+* protocol-relative (e.g. "//evil.example"), which can navigate to another host.
+* Returns true for blocked protocols like javascript:, blob:, and data:, as
+* well as slash/backslash variants of protocol-relative URLs.
+*
+* Scheme parsing normalizes:
+* - Mixed case (JavaScript: → javascript:)
+* - Whitespace/control characters (java\nscript: → javascript:)
+* - Leading whitespace
+*
+* For relative URLs without a protocol-relative prefix, returns false.
+*
+* @param url - The URL string to check
+* @param allowlist - Set of protocols to allow
+* @returns true if the URL uses a protocol that is not allowed or can escape
+* the current origin through a protocol-relative URL
+*/
+function isDangerousProtocol(url, allowlist) {
+	if (!url) return false;
+	if (protocolRelativePrefixRegex.test(url)) return true;
+	const scheme = getUrlScheme(url);
+	return scheme ? !allowlist.has(scheme) : false;
+}
 function decodePath(path) {
-	if (!path) return {
-		path,
-		handledProtocolRelativeURL: false
-	};
-	if (!/[%\\\x00-\x1f\x7f]/.test(path) && !path.startsWith("//")) return {
-		path,
-		handledProtocolRelativeURL: false
-	};
-	const re = /%25|%5C/gi;
-	let cursor = 0;
-	let result = "";
-	let match;
-	while (null !== (match = re.exec(path))) {
-		result += decodeSegment(path.slice(cursor, match.index)) + match[0];
-		cursor = re.lastIndex;
+	if (!path) return path;
+	let result = path;
+	if (/[%\\\x00-\x1f\x7f]/.test(path)) {
+		const re = /%25|%5C/gi;
+		let cursor = 0;
+		let match;
+		result = "";
+		while (null !== (match = re.exec(path))) {
+			result += decodeSegment(path.slice(cursor, match.index)) + match[0];
+			cursor = re.lastIndex;
+		}
+		result += decodeSegment(cursor ? path.slice(cursor) : path);
 	}
-	result = result + decodeSegment(cursor ? path.slice(cursor) : path);
-	let handledProtocolRelativeURL = false;
-	if (result.startsWith("//")) {
-		handledProtocolRelativeURL = true;
-		result = "/" + result.replace(/^\/+/, "");
-	}
-	return {
-		path: result,
-		handledProtocolRelativeURL
-	};
+	return result;
 }
 function getAssetCrossOrigin(assetCrossOrigin, kind) {
 	if (!assetCrossOrigin) return;
@@ -1020,8 +954,13 @@ function createInlineCssStyleAsset(css) {
 function createInlineCssPlaceholderAsset() {
 	return { attrs: { suppressHydrationWarning: true } };
 }
-var GLOBAL_TSR = "$_TSR";
-var TSR_SCRIPT_BARRIER_ID = "$tsr-stream-barrier";
+/**
+* Create a strongly-typed serialization adapter for SSR hydration.
+* Use to register custom types with the router serializer.
+*/
+function createSerializationAdapter(opts) {
+	return opts;
+}
 var SYM_ASYNC_ITERATOR = Symbol.asyncIterator;
 var SYM_HAS_INSTANCE = Symbol.hasInstance;
 var SYM_IS_CONCAT_SPREADABLE = Symbol.isConcatSpreadable;
@@ -1145,6 +1084,8 @@ var NEG_ZERO_NODE = /* @__PURE__ */ createConstantNode(4);
 var INFINITY_NODE = /* @__PURE__ */ createConstantNode(5);
 var NEG_INFINITY_NODE = /* @__PURE__ */ createConstantNode(6);
 var NAN_NODE = /* @__PURE__ */ createConstantNode(7);
+var MIN_JSON_STRINGIFY_LENGTH = 64;
+var JSON_ESCAPE_DIFFERENCES = /[\x00-\x07\x0b\x0e-\x1f<\u2028\u2029\ud800-\udfff]/;
 function serializeChar(str) {
 	switch (str) {
 		case "\"": return "\\\"";
@@ -1161,6 +1102,7 @@ function serializeChar(str) {
 	}
 }
 function serializeString(str) {
+	if (str.length >= MIN_JSON_STRINGIFY_LENGTH && !JSON_ESCAPE_DIFFERENCES.test(str)) return JSON.stringify(str).slice(1, -1);
 	let result = "";
 	let lastPos = 0;
 	let replacement;
@@ -1191,173 +1133,8 @@ function deserializeReplacer(str) {
 	}
 }
 function deserializeString(str) {
+	if (typeof str === "string" && !str.includes("\\")) return str;
 	return str.replace(/(\\\\|\\"|\\n|\\r|\\b|\\t|\\f|\\u2028|\\u2029|\\x3C)/g, deserializeReplacer);
-}
-var REFERENCES_KEY = "__SEROVAL_REFS__";
-var GLOBAL_CONTEXT_R = `self.\$R`;
-function getCrossReferenceHeader(id) {
-	if (id == null) return `${GLOBAL_CONTEXT_R}=${GLOBAL_CONTEXT_R}||[]`;
-	return `(${GLOBAL_CONTEXT_R}=${GLOBAL_CONTEXT_R}||{})["${serializeString(id)}"]=[]`;
-}
-var REFERENCE = /* @__PURE__ */ new Map();
-var INV_REFERENCE = /* @__PURE__ */ new Map();
-function hasReferenceID(value) {
-	return REFERENCE.has(value);
-}
-function hasReference(id) {
-	return INV_REFERENCE.has(id);
-}
-function getReferenceID(value) {
-	if (hasReferenceID(value)) return REFERENCE.get(value);
-	throw new SerovalMissingReferenceError(value);
-}
-function getReference(id) {
-	if (hasReference(id)) return INV_REFERENCE.get(id);
-	throw new SerovalMissingReferenceForIdError(id);
-}
-if (typeof globalThis !== "undefined") Object.defineProperty(globalThis, REFERENCES_KEY, {
-	value: INV_REFERENCE,
-	configurable: true,
-	writable: false,
-	enumerable: false
-});
-else if (typeof window !== "undefined") Object.defineProperty(window, REFERENCES_KEY, {
-	value: INV_REFERENCE,
-	configurable: true,
-	writable: false,
-	enumerable: false
-});
-else if (typeof self !== "undefined") Object.defineProperty(self, REFERENCES_KEY, {
-	value: INV_REFERENCE,
-	configurable: true,
-	writable: false,
-	enumerable: false
-});
-else if (typeof global !== "undefined") Object.defineProperty(global, REFERENCES_KEY, {
-	value: INV_REFERENCE,
-	configurable: true,
-	writable: false,
-	enumerable: false
-});
-function getErrorConstructor(error) {
-	if (error instanceof EvalError) return 1;
-	if (error instanceof RangeError) return 2;
-	if (error instanceof ReferenceError) return 3;
-	if (error instanceof SyntaxError) return 4;
-	if (error instanceof TypeError) return 5;
-	if (error instanceof URIError) return 6;
-	return 0;
-}
-function getInitialErrorOptions(error) {
-	const construct = ERROR_CONSTRUCTOR_STRING[getErrorConstructor(error)];
-	if (error.name !== construct) return { name: error.name };
-	if (error.constructor.name !== construct) return { name: error.constructor.name };
-	return {};
-}
-function getErrorOptions(error, features) {
-	let options = getInitialErrorOptions(error);
-	const names = Object.getOwnPropertyNames(error);
-	for (let i = 0, len = names.length, name; i < len; i++) {
-		name = names[i];
-		if (name !== "name" && name !== "message") if (name === "stack") {
-			if (features & 4) {
-				options = options || {};
-				options[name] = error[name];
-			}
-		} else {
-			options = options || {};
-			options[name] = error[name];
-		}
-	}
-	return options;
-}
-function getObjectFlag(obj) {
-	if (Object.isFrozen(obj)) return 3;
-	if (Object.isSealed(obj)) return 2;
-	if (Object.isExtensible(obj)) return 0;
-	return 1;
-}
-function createNumberNode(value) {
-	switch (value) {
-		case Number.POSITIVE_INFINITY: return INFINITY_NODE;
-		case Number.NEGATIVE_INFINITY: return NEG_INFINITY_NODE;
-	}
-	if (value !== value) return NAN_NODE;
-	if (Object.is(value, -0)) return NEG_ZERO_NODE;
-	return createSerovalNode(0, void 0, value, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createStringNode(value) {
-	return createSerovalNode(1, void 0, serializeString(value), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createBigIntNode(current) {
-	return createSerovalNode(3, void 0, "" + current, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createIndexedValueNode(id) {
-	return createSerovalNode(4, id, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createDateNode(id, current) {
-	const timestamp = current.valueOf();
-	return createSerovalNode(5, id, timestamp !== timestamp ? "" : current.toISOString(), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createTemporalNode(id, type, current) {
-	return createSerovalNode(36, id, current.toString(), type, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createRegExpNode(id, current) {
-	return createSerovalNode(6, id, void 0, serializeString(current.source), current.flags, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createWKSymbolNode(id, current) {
-	return createSerovalNode(17, id, INV_SYMBOL_REF[current], void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createReferenceNode(id, ref) {
-	return createSerovalNode(18, id, serializeString(getReferenceID(ref)), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createPluginNode(id, tag, value) {
-	return createSerovalNode(25, id, value, serializeString(tag), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createArrayNode(id, current, parsedItems) {
-	return createSerovalNode(9, id, void 0, void 0, void 0, void 0, void 0, parsedItems, void 0, void 0, getObjectFlag(current), void 0);
-}
-function createBoxedNode(id, boxed) {
-	return createSerovalNode(21, id, void 0, void 0, void 0, void 0, void 0, void 0, boxed, void 0, void 0, void 0);
-}
-function createTypedArrayNode(id, current, buffer) {
-	return createSerovalNode(15, id, void 0, current.constructor.name, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.length);
-}
-function createBigIntTypedArrayNode(id, current, buffer) {
-	return createSerovalNode(16, id, void 0, current.constructor.name, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.length);
-}
-function createDataViewNode(id, current, buffer) {
-	return createSerovalNode(20, id, void 0, void 0, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.byteLength);
-}
-function createErrorNode(id, current, options) {
-	return createSerovalNode(13, id, getErrorConstructor(current), void 0, serializeString(current.message), options, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createAggregateErrorNode(id, current, options) {
-	return createSerovalNode(14, id, getErrorConstructor(current), void 0, serializeString(current.message), options, void 0, void 0, void 0, void 0, void 0, void 0);
-}
-function createSetNode(id, items) {
-	return createSerovalNode(7, id, void 0, void 0, void 0, void 0, void 0, items, void 0, void 0, void 0, void 0);
-}
-function createIteratorFactoryInstanceNode(factory, items) {
-	return createSerovalNode(28, void 0, void 0, void 0, void 0, void 0, void 0, [factory, items], void 0, void 0, void 0, void 0);
-}
-function createAsyncIteratorFactoryInstanceNode(factory, items) {
-	return createSerovalNode(30, void 0, void 0, void 0, void 0, void 0, void 0, [factory, items], void 0, void 0, void 0, void 0);
-}
-function createStreamConstructorNode(id, factory, sequence) {
-	return createSerovalNode(31, id, void 0, void 0, void 0, void 0, void 0, sequence, factory, void 0, void 0, void 0);
-}
-function createStreamNextNode(id, parsed) {
-	return createSerovalNode(32, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
-}
-function createStreamThrowNode(id, parsed) {
-	return createSerovalNode(33, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
-}
-function createStreamReturnNode(id, parsed) {
-	return createSerovalNode(34, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
-}
-function createSequenceNode(id, sequence, throwAt, doneAt) {
-	return createSerovalNode(35, id, throwAt, void 0, void 0, void 0, void 0, sequence, void 0, void 0, void 0, doneAt);
 }
 var { toString: objectToString } = Object.prototype;
 var STEP_ERROR_CODES = {
@@ -1435,6 +1212,178 @@ var SerovalDepthLimitError = class extends Error {
 		super(getSpecificErrorMessage(9));
 	}
 };
+var REFERENCES_KEY = "__SEROVAL_REFS__";
+var GLOBAL_CONTEXT_R = `self.\$R`;
+function getCrossReferenceHeader(id) {
+	if (id == null) return `${GLOBAL_CONTEXT_R}=${GLOBAL_CONTEXT_R}||[]`;
+	return `(${GLOBAL_CONTEXT_R}=${GLOBAL_CONTEXT_R}||{})["${serializeString(id)}"]=[]`;
+}
+var REFERENCE = /* @__PURE__ */ new Map();
+var INV_REFERENCE = /* @__PURE__ */ new Map();
+function hasReferenceID(value) {
+	return REFERENCE.has(value);
+}
+function hasReference(id) {
+	return INV_REFERENCE.has(id);
+}
+function getReferenceID(value) {
+	if (hasReferenceID(value)) return REFERENCE.get(value);
+	throw new SerovalMissingReferenceError(value);
+}
+function getReference(id) {
+	if (hasReference(id)) return INV_REFERENCE.get(id);
+	throw new SerovalMissingReferenceForIdError(id);
+}
+if (typeof globalThis !== "undefined") Object.defineProperty(globalThis, REFERENCES_KEY, {
+	value: INV_REFERENCE,
+	configurable: true,
+	writable: false,
+	enumerable: false
+});
+else if (typeof window !== "undefined") Object.defineProperty(window, REFERENCES_KEY, {
+	value: INV_REFERENCE,
+	configurable: true,
+	writable: false,
+	enumerable: false
+});
+else if (typeof self !== "undefined") Object.defineProperty(self, REFERENCES_KEY, {
+	value: INV_REFERENCE,
+	configurable: true,
+	writable: false,
+	enumerable: false
+});
+else if (typeof global !== "undefined") Object.defineProperty(global, REFERENCES_KEY, {
+	value: INV_REFERENCE,
+	configurable: true,
+	writable: false,
+	enumerable: false
+});
+function getErrorConstructor(error) {
+	if (error instanceof EvalError) return 1;
+	if (error instanceof RangeError) return 2;
+	if (error instanceof ReferenceError) return 3;
+	if (error instanceof SyntaxError) return 4;
+	if (error instanceof TypeError) return 5;
+	if (error instanceof URIError) return 6;
+	return 0;
+}
+function getInitialErrorOptions(error) {
+	const construct = ERROR_CONSTRUCTOR_STRING[getErrorConstructor(error)];
+	if (error.name !== construct) return { name: error.name };
+	if (error.constructor.name !== construct) return { name: error.constructor.name };
+	return {};
+}
+function getErrorOptions(error, features) {
+	let options = getInitialErrorOptions(error);
+	const names = Object.getOwnPropertyNames(error);
+	for (let i = 0, len = names.length, name; i < len; i++) {
+		name = names[i];
+		if (name !== "name" && name !== "message") {
+			if (name === "stack") {
+				if (features & 4) {
+					options = options || {};
+					options[name] = error[name];
+				}
+			} else {
+				options = options || {};
+				options[name] = error[name];
+			}
+		}
+	}
+	return options;
+}
+function getObjectFlag(obj) {
+	if (Object.isFrozen(obj)) return 3;
+	if (Object.isSealed(obj)) return 2;
+	if (Object.isExtensible(obj)) return 0;
+	return 1;
+}
+function createNumberNode(value) {
+	switch (value) {
+		case Number.POSITIVE_INFINITY: return INFINITY_NODE;
+		case Number.NEGATIVE_INFINITY: return NEG_INFINITY_NODE;
+	}
+	if (value !== value) return NAN_NODE;
+	if (Object.is(value, -0)) return NEG_ZERO_NODE;
+	return createSerovalNode(0, void 0, value, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createStringNode(value) {
+	return createSerovalNode(1, void 0, serializeString(value), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createBigIntNode(current) {
+	return createSerovalNode(3, void 0, "" + current, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createIndexedValueNode(id) {
+	return createSerovalNode(4, id, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createDateNode(id, current) {
+	const timestamp = current.valueOf();
+	return createSerovalNode(5, id, timestamp !== timestamp ? "" : current.toISOString(), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createTemporalNode(id, type, current) {
+	return createSerovalNode(36, id, current.toString(), type, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createRegExpNode(id, current) {
+	return createSerovalNode(6, id, void 0, serializeString(current.source), current.flags, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createWKSymbolNode(id, current) {
+	return createSerovalNode(17, id, INV_SYMBOL_REF[current], void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createReferenceNode(id, ref) {
+	return createSerovalNode(18, id, serializeString(getReferenceID(ref)), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createPluginNode(id, tag, value) {
+	return createSerovalNode(25, id, value, serializeString(tag), void 0, void 0, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createArrayNode(id, current, parsedItems) {
+	return createSerovalNode(9, id, void 0, void 0, void 0, void 0, void 0, parsedItems, void 0, void 0, getObjectFlag(current), void 0);
+}
+function createBoxedNode(id, boxed) {
+	return createSerovalNode(21, id, void 0, void 0, void 0, void 0, void 0, void 0, boxed, void 0, void 0, void 0);
+}
+var MAX_TYPED_ARRAY_LENGTH = 1e6;
+function createTypedArrayNode(id, current, buffer) {
+	if (current.length > MAX_TYPED_ARRAY_LENGTH) throw new SerovalUnsupportedTypeError(current);
+	return createSerovalNode(15, id, void 0, current.constructor.name, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.length);
+}
+function createBigIntTypedArrayNode(id, current, buffer) {
+	if (current.length > MAX_TYPED_ARRAY_LENGTH) throw new SerovalUnsupportedTypeError(current);
+	return createSerovalNode(16, id, void 0, current.constructor.name, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.length);
+}
+function createDataViewNode(id, current, buffer) {
+	if (current.byteLength > MAX_TYPED_ARRAY_LENGTH) throw new SerovalUnsupportedTypeError(current);
+	return createSerovalNode(20, id, void 0, void 0, void 0, void 0, void 0, void 0, buffer, current.byteOffset, void 0, current.byteLength);
+}
+function createErrorNode(id, current, options) {
+	return createSerovalNode(13, id, getErrorConstructor(current), void 0, serializeString(current.message), options, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createAggregateErrorNode(id, current, options) {
+	return createSerovalNode(14, id, getErrorConstructor(current), void 0, serializeString(current.message), options, void 0, void 0, void 0, void 0, void 0, void 0);
+}
+function createSetNode(id, items) {
+	return createSerovalNode(7, id, void 0, void 0, void 0, void 0, void 0, items, void 0, void 0, void 0, void 0);
+}
+function createIteratorFactoryInstanceNode(factory, items) {
+	return createSerovalNode(28, void 0, void 0, void 0, void 0, void 0, void 0, [factory, items], void 0, void 0, void 0, void 0);
+}
+function createAsyncIteratorFactoryInstanceNode(factory, items) {
+	return createSerovalNode(30, void 0, void 0, void 0, void 0, void 0, void 0, [factory, items], void 0, void 0, void 0, void 0);
+}
+function createStreamConstructorNode(id, factory, sequence) {
+	return createSerovalNode(31, id, void 0, void 0, void 0, void 0, void 0, sequence, factory, void 0, void 0, void 0);
+}
+function createStreamNextNode(id, parsed) {
+	return createSerovalNode(32, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
+}
+function createStreamThrowNode(id, parsed) {
+	return createSerovalNode(33, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
+}
+function createStreamReturnNode(id, parsed) {
+	return createSerovalNode(34, id, void 0, void 0, void 0, void 0, void 0, void 0, parsed, void 0, void 0, void 0);
+}
+function createSequenceNode(id, sequence, throwAt, doneAt) {
+	return createSerovalNode(35, id, throwAt, void 0, void 0, void 0, void 0, sequence, void 0, void 0, void 0, doneAt);
+}
 /**
 * An opaque reference allows hiding values from the serializer.
 */
@@ -1477,7 +1426,10 @@ var STREAM_CONSTRUCTOR = () => {
 	let count = 0;
 	const internal = {
 		flush(value, mode, x) {
-			for (x = 0; x < count; x++) if (listeners[x]) listeners[x][mode](value);
+			for (x = 0; x < count; x++) {
+				const listener = listeners[x];
+				if (listener) listener[mode](value);
+			}
 		},
 		up(listener, x, z, current) {
 			for (x = 0, z = buffer.length; x < z; x++) {
@@ -1486,16 +1438,20 @@ var STREAM_CONSTRUCTOR = () => {
 				else listener.next(current);
 			}
 		},
-		on(listener, temp) {
+		on(listener, temp = 0) {
+			let subscribed = alive;
 			if (alive) {
-				temp = count++;
+				for (temp = 0; temp < count; temp++) if (!listeners[temp]) break;
+				if (temp === count) count++;
 				listeners[temp] = listener;
 			}
 			internal.up(listener);
 			return () => {
-				if (alive) {
-					listeners[temp] = listeners[count];
-					listeners[count--] = void 0;
+				if (alive && subscribed) {
+					subscribed = false;
+					listeners[temp] = void 0;
+					while (count > 0 && !listeners[count - 1]) count--;
+					listeners.length = count;
 				}
 			};
 		}
@@ -1640,16 +1596,26 @@ var ARRAY_BUFFER_CONSTRUCTOR = (b64) => {
 	return arr.buffer;
 };
 var SERIALIZED_ARRAY_BUFFER_CONSTRUCTOR = /* @__PURE__ */ ARRAY_BUFFER_CONSTRUCTOR.toString();
+/**
+* An internal class rather than a tagged POJO: identity is checked with
+* `instanceof`, which untrusted input cannot forge (the class is not exported).
+* The eval-based `deserialize` path still rebuilds a `{__SEROVAL_SEQUENCE__…}`
+* POJO from embedded source - it has no access to this class - so a value read
+* back through `deserialize` is not an instance and, by design, is not treated
+* as a genuine Sequence on re-serialization.
+*/
+var Sequence = class {
+	constructor(values, throwAt, doneAt) {
+		this.v = values;
+		this.t = throwAt;
+		this.d = doneAt;
+	}
+};
 function isSequence(value) {
-	return "__SEROVAL_SEQUENCE__" in value;
+	return value instanceof Sequence;
 }
 function createSequence(values, throwAt, doneAt) {
-	return {
-		__SEROVAL_SEQUENCE__: true,
-		v: values,
-		t: throwAt,
-		d: doneAt
-	};
+	return new Sequence(values, throwAt, doneAt);
 }
 function createSequenceFromIterable(source) {
 	const values = [];
@@ -1665,7 +1631,9 @@ function createSequenceFromIterable(source) {
 		}
 	} catch (error) {
 		throwsAt = values.length;
+		doneAt = throwsAt;
 		values.push(error);
+		break;
 	}
 	return createSequence(values, throwsAt, doneAt);
 }
@@ -1694,25 +1662,116 @@ var SPECIAL_REF_STRING = {
 	[4]: SERIALIZED_STREAM_CONSTRUCTOR,
 	[5]: SERIALIZED_ARRAY_BUFFER_CONSTRUCTOR
 };
+/**
+* An internal class rather than a tagged POJO: identity is checked with
+* `instanceof`, which untrusted input cannot forge (the class is not exported).
+*
+* The behavior is intentionally duplicated from `STREAM_CONSTRUCTOR`. That
+* constructor's source is embedded verbatim into the eval-based `deserialize`
+* output, which has no access to this class, so the two cannot be shared. A
+* stream read back through `deserialize` is therefore a plain POJO and, by
+* design, is not treated as a genuine Stream on re-serialization. Keep the two
+* implementations in sync.
+*/
+var Stream = class {
+	constructor() {
+		this.buffer = [];
+		this.listeners = [];
+		this.alive = true;
+		this.success = false;
+		this.count = 0;
+	}
+	flush(value, mode) {
+		for (let x = 0; x < this.count; x++) {
+			var _this$listeners$x;
+			(_this$listeners$x = this.listeners[x]) === null || _this$listeners$x === void 0 || _this$listeners$x[mode](value);
+		}
+	}
+	replay(listener) {
+		for (let x = 0, z = this.buffer.length; x < z; x++) {
+			const current = this.buffer[x];
+			if (!this.alive && x === z - 1) listener[this.success ? "return" : "throw"](current);
+			else listener.next(current);
+		}
+	}
+	on(listener) {
+		let subscribed = this.alive;
+		let temp = 0;
+		if (subscribed) {
+			for (; temp < this.count; temp++) if (!this.listeners[temp]) break;
+			if (temp === this.count) this.count++;
+			this.listeners[temp] = listener;
+		}
+		this.replay(listener);
+		return () => {
+			if (this.alive && subscribed) {
+				subscribed = false;
+				this.listeners[temp] = void 0;
+				while (this.count > 0 && !this.listeners[this.count - 1]) this.count--;
+				this.listeners.length = this.count;
+			}
+		};
+	}
+	next(value) {
+		if (this.alive) {
+			this.buffer.push(value);
+			this.flush(value, "next");
+		}
+	}
+	throw(value) {
+		if (this.alive) {
+			this.buffer.push(value);
+			this.flush(value, "throw");
+			this.alive = false;
+			this.success = false;
+			this.listeners.length = 0;
+		}
+	}
+	return(value) {
+		if (this.alive) {
+			this.buffer.push(value);
+			this.flush(value, "return");
+			this.alive = false;
+			this.success = true;
+			this.listeners.length = 0;
+		}
+	}
+};
 function isStream(value) {
-	return "__SEROVAL_STREAM__" in value;
+	return value instanceof Stream;
 }
 function createStream() {
-	return STREAM_CONSTRUCTOR();
+	return new Stream();
 }
-function createStreamFromAsyncIterable(iterable) {
+function createStreamFromAsyncIterable(iterable, cleanups) {
 	const stream = createStream();
 	const iterator = iterable[SYM_ASYNC_ITERATOR]();
+	let cancelled = false;
+	let done = false;
+	cleanups === null || cleanups === void 0 || cleanups.push(() => {
+		if (!(done || cancelled)) {
+			cancelled = true;
+			Promise.resolve().then(() => {
+				var _iterator$return;
+				return (_iterator$return = iterator.return) === null || _iterator$return === void 0 ? void 0 : _iterator$return.call(iterator);
+			}).catch(() => {});
+		}
+	});
 	async function push() {
 		try {
-			const value = await iterator.next();
-			if (value.done) stream.return(value.value);
-			else {
+			while (!cancelled) {
+				const value = await iterator.next();
+				if (cancelled) return;
+				if (value.done) {
+					done = true;
+					stream.return(value.value);
+					break;
+				}
 				stream.next(value.value);
-				await push();
 			}
 		} catch (error) {
-			stream.throw(error);
+			done = true;
+			if (!cancelled) stream.throw(error);
 		}
 	}
 	push().catch(() => {});
@@ -1730,13 +1789,15 @@ async function promiseToResult(current) {
 	}
 }
 function createBaseParserContext(mode, options) {
+	var _options$compactArray;
 	return {
 		plugins: options.plugins,
 		mode,
 		marked: /* @__PURE__ */ new Set(),
 		features: 127 ^ (options.disabledFeatures || 0),
 		refs: options.refs || /* @__PURE__ */ new Map(),
-		depthLimit: options.depthLimit || 1e3
+		depthLimit: options.depthLimit || 1e3,
+		compactArrayBufferViews: (_options$compactArray = options.compactArrayBufferViews) !== null && _options$compactArray !== void 0 ? _options$compactArray : false
 	};
 }
 /**
@@ -1816,11 +1877,22 @@ function createMapNode(ctx, id, k, v) {
 function createPromiseConstructorNode(ctx, id, resolver) {
 	return createSerovalNode(22, id, resolver, void 0, void 0, void 0, void 0, void 0, parseSpecialReference(ctx, 1), void 0, void 0, void 0);
 }
-function createArrayBufferNode(ctx, id, current) {
+function getArrayBufferView(ctx, current) {
+	if (!ctx.compactArrayBufferViews) return current;
+	const buffer = new Uint8Array(current.buffer, current.byteOffset, current.byteLength).slice().buffer;
+	const Constructor = current.constructor;
+	return new Constructor(buffer);
+}
+function encodeArrayBuffer(current) {
+	if (typeof Buffer !== "undefined") return Buffer.from(current).toString("base64");
 	const bytes = new Uint8Array(current);
+	if (typeof bytes.toBase64 === "function") return bytes.toBase64();
 	let result = "";
 	for (let i = 0, len = bytes.length; i < len; i++) result += String.fromCharCode(bytes[i]);
-	return createSerovalNode(19, id, serializeString(btoa(result)), void 0, void 0, void 0, void 0, void 0, parseSpecialReference(ctx, 5), void 0, void 0, void 0);
+	return btoa(result);
+}
+function createArrayBufferNode(ctx, id, current) {
+	return createSerovalNode(19, id, encodeArrayBuffer(current), void 0, void 0, void 0, void 0, void 0, parseSpecialReference(ctx, 5), void 0, void 0, void 0);
 }
 function createAsyncParserContext(mode, options) {
 	return {
@@ -1882,12 +1954,15 @@ async function parseBoxed$1(ctx, depth, id, current) {
 	return createBoxedNode(id, await parseAsync(ctx, depth, current.valueOf()));
 }
 async function parseTypedArray$1(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createTypedArrayNode(id, current, await parseAsync(ctx, depth, current.buffer));
 }
 async function parseBigIntTypedArray$1(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createBigIntTypedArrayNode(id, current, await parseAsync(ctx, depth, current.buffer));
 }
 async function parseDataView$1(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createDataViewNode(id, current, await parseAsync(ctx, depth, current.buffer));
 }
 async function parseError$1(ctx, depth, id, current) {
@@ -2014,7 +2089,6 @@ async function parseObjectAsync(ctx, depth, id, current) {
 	if (currentFeatures & 16) switch (currentClass) {
 		case BigInt64Array:
 		case BigUint64Array: return parseBigIntTypedArray$1(ctx, depth, id, current);
-		default: break;
 	}
 	if (currentFeatures & 1 && typeof AggregateError !== "undefined" && (currentClass === AggregateError || current instanceof AggregateError)) return parseAggregateError$1(ctx, depth, id, current);
 	if (currentFeatures & 64 && typeof Temporal !== "undefined") switch (currentClass) {
@@ -2026,7 +2100,6 @@ async function parseObjectAsync(ctx, depth, id, current) {
 		case Temporal.PlainTime: return createTemporalNode(id, 5, current);
 		case Temporal.PlainYearMonth: return createTemporalNode(id, 6, current);
 		case Temporal.ZonedDateTime: return createTemporalNode(id, 7, current);
-		default: break;
 	}
 	if (current instanceof Error) return parseError$1(ctx, depth, id, current);
 	if (SYM_ITERATOR in current || SYM_ASYNC_ITERATOR in current) return parsePlainObject$1(ctx, depth, id, current, !!currentClass);
@@ -2121,7 +2194,8 @@ function isValidSymbol(symbol) {
 		default: return false;
 	}
 }
-var MAX_BASE64_LENGTH = 1e6;
+var DEFAULT_MAX_BASE64_LENGTH = 1e6;
+var MIN_NATIVE_BASE64_LENGTH = 512;
 var MAX_BIGINT_LENGTH = 1e4;
 var MAX_REGEXP_SOURCE_LENGTH = 2e4;
 function applyObjectFlag(obj, flag) {
@@ -2134,7 +2208,9 @@ function applyObjectFlag(obj, flag) {
 }
 var DEFAULT_DEPTH_LIMIT = 1e3;
 function createBaseDeserializerContext(mode, options) {
-	var _options$features;
+	var _options$maxBase64Len, _options$features;
+	const maxBase64Length = (_options$maxBase64Len = options.maxBase64Length) !== null && _options$maxBase64Len !== void 0 ? _options$maxBase64Len : DEFAULT_MAX_BASE64_LENGTH;
+	if (!Number.isSafeInteger(maxBase64Length) || maxBase64Length < 0) throw new RangeError("maxBase64Length must be a non-negative safe integer");
 	const refs = options.refs || /* @__PURE__ */ new Map();
 	if (!("types" in refs)) Object.assign(refs, { types: /* @__PURE__ */ new Map() });
 	return {
@@ -2142,7 +2218,8 @@ function createBaseDeserializerContext(mode, options) {
 		plugins: options.plugins,
 		refs,
 		features: (_options$features = options.features) !== null && _options$features !== void 0 ? _options$features : 127 ^ (options.disabledFeatures || 0),
-		depthLimit: options.depthLimit || DEFAULT_DEPTH_LIMIT
+		depthLimit: options.depthLimit || DEFAULT_DEPTH_LIMIT,
+		maxBase64Length
 	};
 }
 function createVanillaDeserializerContext(options) {
@@ -2170,7 +2247,7 @@ function guardIndexedValue(ctx, id) {
 	if (ctx.refs.has(id)) throw new Error("Conflicted ref id: " + id);
 }
 function isThennable(value) {
-	return !!value && typeof value === "object" && "then" in value && typeof value.then === "function";
+	return !!value && (typeof value === "object" || typeof value === "function") && "then" in value && typeof value.then === "function";
 }
 function assignIndexedValueVanilla(ctx, id, value) {
 	guardIndexedValue(ctx.base, id);
@@ -2192,8 +2269,12 @@ function deserializeKnownValue(node, record, key) {
 function deserializeReference(ctx, node) {
 	return assignIndexedValue$1(ctx, node.i, getReference(deserializeString(node.s)));
 }
+function validateNodeList(node, list) {
+	if (!Array.isArray(list)) throw new SerovalMalformedNodeError(node);
+}
 function deserializeArray(ctx, depth, node) {
 	const items = node.a;
+	validateNodeList(node, items);
 	const len = items.length;
 	const result = assignIndexedValue$1(ctx, node.i, new Array(len));
 	for (let i = 0, item; i < len; i++) {
@@ -2235,6 +2316,8 @@ function validateNodeType(ctx, node, id, type) {
 }
 function deserializeProperties(ctx, depth, node, result) {
 	const keys = node.k;
+	validateNodeList(node, keys);
+	validateNodeList(node, node.v);
 	if (keys.length > 0) for (let i = 0, vals = node.v, len = keys.length; i < len; i++) assignProperty(ctx, depth, result, keys[i], vals[i]);
 	return result;
 }
@@ -2289,22 +2372,35 @@ function deserializeRegExp(ctx, node) {
 }
 function deserializeSet(ctx, depth, node) {
 	const result = assignIndexedValue$1(ctx, node.i, /* @__PURE__ */ new Set());
+	validateNodeList(node, node.a);
 	for (let i = 0, items = node.a, len = items.length; i < len; i++) result.add(deserialize$1(ctx, depth, items[i]));
 	return result;
 }
 function deserializeMap(ctx, depth, node) {
 	const result = assignIndexedValue$1(ctx, node.i, /* @__PURE__ */ new Map());
+	validateNodeList(node, node.e.k);
+	validateNodeList(node, node.e.v);
 	for (let i = 0, keys = node.e.k, vals = node.e.v, len = keys.length; i < len; i++) result.set(deserialize$1(ctx, depth, keys[i]), deserialize$1(ctx, depth, vals[i]));
 	return result;
 }
 function deserializeArrayBuffer(ctx, node) {
-	if (node.s.length > MAX_BASE64_LENGTH) throw new SerovalMalformedNodeError(node);
-	return assignIndexedValue$1(ctx, node.i, ARRAY_BUFFER_CONSTRUCTOR(deserializeString(node.s)));
+	if (typeof node.s !== "string") throw new SerovalMalformedNodeError(node);
+	if (node.s.length > ctx.base.maxBase64Length) throw new RangeError("ArrayBuffer exceeds maxBase64Length (" + ctx.base.maxBase64Length + ")");
+	const source = deserializeString(node.s);
+	let buffer;
+	if (source.length < MIN_NATIVE_BASE64_LENGTH || typeof Buffer === "undefined") buffer = ARRAY_BUFFER_CONSTRUCTOR(source);
+	else {
+		const decoded = atob(source);
+		buffer = new ArrayBuffer(decoded.length);
+		Buffer.from(buffer).write(decoded, "latin1");
+	}
+	return assignIndexedValue$1(ctx, node.i, buffer);
 }
 function deserializeTypedArray(ctx, depth, node) {
 	var _node$b;
 	const construct = getTypedArrayConstructor(node.c);
 	const source = deserialize$1(ctx, depth, node.f);
+	if (!(source instanceof ArrayBuffer)) throw new SerovalMalformedNodeError(node);
 	const offset = (_node$b = node.b) !== null && _node$b !== void 0 ? _node$b : 0;
 	if (offset < 0 || offset > source.byteLength) throw new SerovalMalformedNodeError(node);
 	return assignIndexedValue$1(ctx, node.i, new construct(source, offset, node.l));
@@ -2312,6 +2408,7 @@ function deserializeTypedArray(ctx, depth, node) {
 function deserializeDataView(ctx, depth, node) {
 	var _node$b2;
 	const source = deserialize$1(ctx, depth, node.f);
+	if (!(source instanceof ArrayBuffer)) throw new SerovalMalformedNodeError(node);
 	const offset = (_node$b2 = node.b) !== null && _node$b2 !== void 0 ? _node$b2 : 0;
 	if (offset < 0 || offset > source.byteLength) throw new SerovalMalformedNodeError(node);
 	return assignIndexedValue$1(ctx, node.i, new DataView(source, offset, node.l));
@@ -2372,16 +2469,21 @@ function deserializePromiseFulfill(ctx, depth, node) {
 }
 function deserializeIteratorFactoryInstance(ctx, depth, node) {
 	deserialize$1(ctx, depth, node.a[0]);
-	return sequenceToIterator(deserialize$1(ctx, depth, node.a[1]));
+	const source = deserialize$1(ctx, depth, node.a[1]);
+	if (!isSequence(source)) throw new SerovalMalformedNodeError(node.a[1]);
+	return sequenceToIterator(source);
 }
 function deserializeAsyncIteratorFactoryInstance(ctx, depth, node) {
 	deserialize$1(ctx, depth, node.a[0]);
-	return streamToAsyncIterable(deserialize$1(ctx, depth, node.a[1]));
+	const source = deserialize$1(ctx, depth, node.a[1]);
+	if (!isStream(source)) throw new SerovalMalformedNodeError(node.a[1]);
+	return streamToAsyncIterable(source);
 }
 function deserializeStreamConstructor(ctx, depth, node) {
 	const result = assignIndexedValue$1(ctx, node.i, createStream());
 	assignNodeType(ctx, node.i, 31);
 	const items = node.a;
+	validateNodeList(node, items);
 	const len = items.length;
 	if (len) for (let i = 0; i < len; i++) deserialize$1(ctx, depth, items[i]);
 	return result;
@@ -2419,9 +2521,15 @@ function deserializeIteratorFactory(ctx, depth, node) {
 function deserializeAsyncIteratorFactory(ctx, depth, node) {
 	deserialize$1(ctx, depth, node.a[1]);
 }
+function isSequenceIndex(value, size) {
+	return Number.isInteger(value) && value >= -1 && value < size;
+}
 function deserializeSequence(ctx, depth, node) {
+	validateNodeList(node, node.a);
+	const size = node.a.length;
+	if (!(isSequenceIndex(node.s, size) && isSequenceIndex(node.l, size))) throw new SerovalMalformedNodeError(node);
 	const result = assignIndexedValue$1(ctx, node.i, createSequence([], node.s, node.l));
-	for (let i = 0, len = node.a.length; i < len; i++) result.v[i] = deserialize$1(ctx, depth, node.a[i]);
+	for (let i = 0; i < size; i++) result.v[i] = deserialize$1(ctx, depth, node.a[i]);
 	return result;
 }
 function deserialize$1(ctx, depth, node) {
@@ -2826,9 +2934,10 @@ function serializeStringKeyAssignment(ctx, source, mainAssignments, key, value) 
 	const serialized = serialize$1(ctx, value);
 	const check = Number(key);
 	const isIdentifier = check >= 0 && check.toString() === key || isValidIdentifier(key);
-	if (isIndexedValueInStack(base, value)) if (isIdentifier && check !== check) createObjectAssign(ctx, source.i, key, serialized);
-	else createArrayAssign(ctx, source.i, isIdentifier ? key : "\"" + key + "\"", serialized);
-	else {
+	if (isIndexedValueInStack(base, value)) {
+		if (isIdentifier && check !== check) createObjectAssign(ctx, source.i, key, serialized);
+		else createArrayAssign(ctx, source.i, isIdentifier ? key : "\"" + key + "\"", serialized);
+	} else {
 		const parentAssignment = base.assignments;
 		base.assignments = mainAssignments;
 		if (isIdentifier && check !== check) createObjectAssign(ctx, source.i, key, serialized);
@@ -3278,7 +3387,7 @@ function parseProperties(ctx, depth, properties) {
 	}
 	if (SYM_ASYNC_ITERATOR in properties) {
 		keyNodes.push(parseWellKnownSymbol(ctx.base, SYM_ASYNC_ITERATOR));
-		valueNodes.push(createAsyncIteratorFactoryInstanceNode(parseAsyncIteratorFactory(ctx.base), parseSOS(ctx, depth, ctx.type === 1 ? createStream() : createStreamFromAsyncIterable(properties))));
+		valueNodes.push(createAsyncIteratorFactoryInstanceNode(parseAsyncIteratorFactory(ctx.base), parseSOS(ctx, depth, ctx.type === 1 ? createStream() : createStreamFromAsyncIterable(properties, ctx.state.cleanups))));
 	}
 	if (SYM_TO_STRING_TAG in properties) {
 		keyNodes.push(parseWellKnownSymbol(ctx.base, SYM_TO_STRING_TAG));
@@ -3300,12 +3409,15 @@ function parseBoxed(ctx, depth, id, current) {
 	return createBoxedNode(id, parseSOS(ctx, depth, current.valueOf()));
 }
 function parseTypedArray(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createTypedArrayNode(id, current, parseSOS(ctx, depth, current.buffer));
 }
 function parseBigIntTypedArray(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createBigIntTypedArrayNode(id, current, parseSOS(ctx, depth, current.buffer));
 }
 function parseDataView(ctx, depth, id, current) {
+	current = getArrayBufferView(ctx.base, current);
 	return createDataViewNode(id, current, parseSOS(ctx, depth, current.buffer));
 }
 function parseError(ctx, depth, id, current) {
@@ -3437,7 +3549,6 @@ function parseObjectPhase2(ctx, depth, id, current, currentClass) {
 	if (currentFeatures & 16) switch (currentClass) {
 		case BigInt64Array:
 		case BigUint64Array: return parseBigIntTypedArray(ctx, depth, id, current);
-		default: break;
 	}
 	if (currentFeatures & 1 && typeof AggregateError !== "undefined" && (currentClass === AggregateError || current instanceof AggregateError)) return parseAggregateError(ctx, depth, id, current);
 	if (currentFeatures & 64 && typeof Temporal !== "undefined") switch (currentClass) {
@@ -3449,7 +3560,6 @@ function parseObjectPhase2(ctx, depth, id, current, currentClass) {
 		case Temporal.PlainTime: return createTemporalNode(id, 5, current);
 		case Temporal.PlainYearMonth: return createTemporalNode(id, 6, current);
 		case Temporal.ZonedDateTime: return createTemporalNode(id, 7, current);
-		default: break;
 	}
 	if (current instanceof Error) return parseError(ctx, depth, id, current);
 	if (SYM_ITERATOR in current || SYM_ASYNC_ITERATOR in current) return parsePlainObject(ctx, depth, id, current, !!currentClass);
@@ -3547,8 +3657,10 @@ function destroyStreamParse(ctx) {
 	}
 }
 async function toCrossJSONAsync(source, options = {}) {
+	const plugins = resolvePlugins(options.plugins);
 	return await parseTopAsync(createAsyncParserContext(2, {
-		plugins: resolvePlugins(options.plugins),
+		compactArrayBufferViews: options.compactArrayBufferViews,
+		plugins,
 		disabledFeatures: options.disabledFeatures,
 		refs: options.refs
 	}), source);
@@ -3556,6 +3668,7 @@ async function toCrossJSONAsync(source, options = {}) {
 function crossSerializeStream(source, options) {
 	const plugins = resolvePlugins(options.plugins);
 	const ctx = createStreamParserContext({
+		compactArrayBufferViews: options.compactArrayBufferViews,
 		plugins,
 		refs: options.refs,
 		disabledFeatures: options.disabledFeatures,
@@ -3582,8 +3695,10 @@ function crossSerializeStream(source, options) {
 	return destroyStreamParse.bind(null, ctx);
 }
 function toCrossJSONStream(source, options) {
+	const plugins = resolvePlugins(options.plugins);
 	const ctx = createStreamParserContext({
-		plugins: resolvePlugins(options.plugins),
+		compactArrayBufferViews: options.compactArrayBufferViews,
+		plugins,
 		refs: options.refs,
 		disabledFeatures: options.disabledFeatures,
 		depthLimit: options.depthLimit,
@@ -3600,34 +3715,12 @@ function fromJSON(source, options = {}) {
 	const disabledFeatures = options.disabledFeatures || 0;
 	const sourceFeatures = (_source$f = source.f) !== null && _source$f !== void 0 ? _source$f : 127;
 	return deserializeTop(createVanillaDeserializerContext({
+		maxBase64Length: options.maxBase64Length,
 		plugins,
 		markedRefs: source.m,
 		features: sourceFeatures & ~disabledFeatures,
 		disabledFeatures
 	}), source.t);
-}
-/**
-* Create a strongly-typed serialization adapter for SSR hydration.
-* Use to register custom types with the router serializer.
-*/
-function createSerializationAdapter(opts) {
-	return opts;
-}
-/** Create a Seroval plugin for server-side serialization only. */
-/* @__NO_SIDE_EFFECTS__ */
-function makeSsrSerovalPlugin(serializationAdapter, options) {
-	return /* @__PURE__ */ createPlugin({
-		tag: "$TSR/t/" + serializationAdapter.key,
-		test: serializationAdapter.test,
-		parse: { stream(value, ctx, _data) {
-			return { v: ctx.parse(serializationAdapter.toSerializable(value)) };
-		} },
-		serialize(node, ctx, _data) {
-			options.didRun = true;
-			return GLOBAL_TSR + ".t.get(\"" + serializationAdapter.key + "\")(" + ctx.serialize(node.v) + ")";
-		},
-		deserialize: void 0
-	});
 }
 /** Create a Seroval plugin for client/server symmetric (de)serialization. */
 /* @__NO_SIDE_EFFECTS__ */
@@ -3636,25 +3729,26 @@ function makeSerovalPlugin(serializationAdapter) {
 		tag: "$TSR/t/" + serializationAdapter.key,
 		test: serializationAdapter.test,
 		parse: {
-			sync(value, ctx, _data) {
+			sync(value, ctx) {
 				return { v: ctx.parse(serializationAdapter.toSerializable(value)) };
 			},
-			async async(value, ctx, _data) {
+			async async(value, ctx) {
 				return { v: await ctx.parse(serializationAdapter.toSerializable(value)) };
 			},
-			stream(value, ctx, _data) {
+			stream(value, ctx) {
 				return { v: ctx.parse(serializationAdapter.toSerializable(value)) };
 			}
 		},
 		serialize: void 0,
-		deserialize(node, ctx, _data) {
+		deserialize(node, ctx) {
 			return serializationAdapter.fromSerializable(ctx.deserialize(node.v));
 		}
 	});
 }
 /**
 * Marker class for ReadableStream<Uint8Array> that should be serialized
-* with base64 encoding (SSR) or binary framing (server functions).
+* with base64/text encoding (JSON and SSR) or binary framing
+* (server-function responses).
 *
 * Wrap your binary streams with this to get efficient serialization:
 * ```ts
@@ -3664,6 +3758,13 @@ function makeSerovalPlugin(serializationAdapter) {
 * // For text-heavy data (RSC payloads, etc.)
 * return { data: new RawStream(rscStream, { hint: 'text' }) }
 * ```
+*
+* RawStreams returned from one server function share one ordered response.
+* Arbitrary or sequential consumption can require potentially unbounded client
+* buffering for unread data. Cancelling one RawStream discards it locally;
+* abort the whole server-function call to cancel the response and server work.
+* Consume streams concurrently, cancel unused streams promptly, or use separate
+* calls when independent backpressure is required.
 */
 var RawStream = class {
 	constructor(stream, options) {
@@ -3671,386 +3772,6 @@ var RawStream = class {
 		this.hint = options?.hint ?? "binary";
 	}
 };
-var BufferCtor = globalThis.Buffer;
-var hasNodeBuffer = !!BufferCtor && typeof BufferCtor.from === "function";
-function uint8ArrayToBase64(bytes) {
-	if (bytes.length === 0) return "";
-	if (hasNodeBuffer) return BufferCtor.from(bytes).toString("base64");
-	const CHUNK_SIZE = 32768;
-	const chunks = [];
-	for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-		const chunk = bytes.subarray(i, i + CHUNK_SIZE);
-		chunks.push(String.fromCharCode.apply(null, chunk));
-	}
-	return btoa(chunks.join(""));
-}
-function base64ToUint8Array(base64) {
-	if (base64.length === 0) return /* @__PURE__ */ new Uint8Array(0);
-	if (hasNodeBuffer) {
-		const buf = BufferCtor.from(base64, "base64");
-		return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-	}
-	const binary = atob(base64);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-	return bytes;
-}
-var RAW_STREAM_FACTORY_BINARY = Object.create(null);
-var RAW_STREAM_FACTORY_TEXT = Object.create(null);
-var RAW_STREAM_FACTORY_CONSTRUCTOR_BINARY = (stream) => new ReadableStream({ start(controller) {
-	stream.on({
-		next(base64) {
-			try {
-				controller.enqueue(base64ToUint8Array(base64));
-			} catch {}
-		},
-		throw(error) {
-			controller.error(error);
-		},
-		return() {
-			try {
-				controller.close();
-			} catch {}
-		}
-	});
-} });
-var textEncoderForFactory = new TextEncoder();
-var RAW_STREAM_FACTORY_CONSTRUCTOR_TEXT = (stream) => {
-	return new ReadableStream({ start(controller) {
-		stream.on({
-			next(value) {
-				try {
-					if (typeof value === "string") controller.enqueue(textEncoderForFactory.encode(value));
-					else controller.enqueue(base64ToUint8Array(value.$b64));
-				} catch {}
-			},
-			throw(error) {
-				controller.error(error);
-			},
-			return() {
-				try {
-					controller.close();
-				} catch {}
-			}
-		});
-	} });
-};
-var FACTORY_BINARY = `(s=>new ReadableStream({start(c){s.on({next(b){try{const d=atob(b),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);c.enqueue(a)}catch(_){}},throw(e){c.error(e)},return(){try{c.close()}catch(_){}}})}}))`;
-var FACTORY_TEXT = `(s=>{const e=new TextEncoder();return new ReadableStream({start(c){s.on({next(v){try{if(typeof v==='string'){c.enqueue(e.encode(v))}else{const d=atob(v.$b64),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);c.enqueue(a)}}catch(_){}},throw(x){c.error(x)},return(){try{c.close()}catch(_){}}})}})})`;
-function toBinaryStream(readable) {
-	const stream = createStream();
-	const reader = readable.getReader();
-	(async () => {
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) {
-					stream.return(void 0);
-					break;
-				}
-				stream.next(uint8ArrayToBase64(value));
-			}
-		} catch (error) {
-			stream.throw(error);
-		} finally {
-			reader.releaseLock();
-		}
-	})();
-	return stream;
-}
-function toTextStream(readable) {
-	const stream = createStream();
-	const reader = readable.getReader();
-	const decoder = new TextDecoder("utf-8", { fatal: true });
-	(async () => {
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) {
-					try {
-						const remaining = decoder.decode();
-						if (remaining.length > 0) stream.next(remaining);
-					} catch {}
-					stream.return(void 0);
-					break;
-				}
-				try {
-					const text = decoder.decode(value, { stream: true });
-					if (text.length > 0) stream.next(text);
-				} catch {
-					stream.next({ $b64: uint8ArrayToBase64(value) });
-				}
-			}
-		} catch (error) {
-			stream.throw(error);
-		} finally {
-			reader.releaseLock();
-		}
-	})();
-	return stream;
-}
-/**
-* SSR Plugin - uses base64 or UTF-8+base64 encoding for chunks, delegates to seroval's stream mechanism.
-* Used during SSR when serializing to JavaScript code for HTML injection.
-*
-* Supports two modes based on RawStream hint:
-* - 'binary': Always base64 encode (default)
-* - 'text': Try UTF-8 first, fallback to base64 for invalid UTF-8
-*/
-var RawStreamSSRPlugin = /* @__PURE__ */ createPlugin({
-	tag: "tss/RawStream",
-	extends: [/* @__PURE__ */ createPlugin({
-		tag: "tss/RawStreamFactory",
-		test(value) {
-			return value === RAW_STREAM_FACTORY_BINARY;
-		},
-		parse: {
-			sync(_value, _ctx, _data) {
-				return {};
-			},
-			async async(_value, _ctx, _data) {
-				return {};
-			},
-			stream(_value, _ctx, _data) {
-				return {};
-			}
-		},
-		serialize(_node, _ctx, _data) {
-			return FACTORY_BINARY;
-		},
-		deserialize(_node, _ctx, _data) {
-			return RAW_STREAM_FACTORY_BINARY;
-		}
-	}), /* @__PURE__ */ createPlugin({
-		tag: "tss/RawStreamFactoryText",
-		test(value) {
-			return value === RAW_STREAM_FACTORY_TEXT;
-		},
-		parse: {
-			sync(_value, _ctx, _data) {
-				return {};
-			},
-			async async(_value, _ctx, _data) {
-				return {};
-			},
-			stream(_value, _ctx, _data) {
-				return {};
-			}
-		},
-		serialize(_node, _ctx, _data) {
-			return FACTORY_TEXT;
-		},
-		deserialize(_node, _ctx, _data) {
-			return RAW_STREAM_FACTORY_TEXT;
-		}
-	})],
-	test(value) {
-		return value instanceof RawStream;
-	},
-	parse: {
-		sync(value, ctx, _data) {
-			const factory = value.hint === "text" ? RAW_STREAM_FACTORY_TEXT : RAW_STREAM_FACTORY_BINARY;
-			return {
-				hint: ctx.parse(value.hint),
-				factory: ctx.parse(factory),
-				stream: ctx.parse(createStream())
-			};
-		},
-		async async(value, ctx, _data) {
-			const factory = value.hint === "text" ? RAW_STREAM_FACTORY_TEXT : RAW_STREAM_FACTORY_BINARY;
-			const encodedStream = value.hint === "text" ? toTextStream(value.stream) : toBinaryStream(value.stream);
-			return {
-				hint: await ctx.parse(value.hint),
-				factory: await ctx.parse(factory),
-				stream: await ctx.parse(encodedStream)
-			};
-		},
-		stream(value, ctx, _data) {
-			const factory = value.hint === "text" ? RAW_STREAM_FACTORY_TEXT : RAW_STREAM_FACTORY_BINARY;
-			const encodedStream = value.hint === "text" ? toTextStream(value.stream) : toBinaryStream(value.stream);
-			return {
-				hint: ctx.parse(value.hint),
-				factory: ctx.parse(factory),
-				stream: ctx.parse(encodedStream)
-			};
-		}
-	},
-	serialize(node, ctx, _data) {
-		return "(" + ctx.serialize(node.factory) + ")(" + ctx.serialize(node.stream) + ")";
-	},
-	deserialize(node, ctx, _data) {
-		const stream = ctx.deserialize(node.stream);
-		return ctx.deserialize(node.hint) === "text" ? RAW_STREAM_FACTORY_CONSTRUCTOR_TEXT(stream) : RAW_STREAM_FACTORY_CONSTRUCTOR_BINARY(stream);
-	}
-});
-/**
-* Creates an RPC plugin instance that registers raw streams with a multiplexer.
-* Used for server function responses where we want binary framing.
-* Note: RPC always uses binary framing regardless of hint.
-*
-* @param onRawStream Callback invoked when a RawStream is encountered during serialization
-*/
-/* @__NO_SIDE_EFFECTS__ */
-function createRawStreamRPCPlugin(onRawStream) {
-	let nextStreamId = 1;
-	return /* @__PURE__ */ createPlugin({
-		tag: "tss/RawStream",
-		test(value) {
-			return value instanceof RawStream;
-		},
-		parse: {
-			async async(value, ctx, _data) {
-				const streamId = nextStreamId++;
-				onRawStream(streamId, value.stream);
-				return { streamId: await ctx.parse(streamId) };
-			},
-			stream(value, ctx, _data) {
-				const streamId = nextStreamId++;
-				onRawStream(streamId, value.stream);
-				return { streamId: ctx.parse(streamId) };
-			}
-		},
-		serialize() {
-			throw new Error("RawStreamRPCPlugin.serialize should not be called. RPC uses JSON serialization, not JS code generation.");
-		},
-		deserialize() {
-			throw new Error("RawStreamRPCPlugin.deserialize should not be called. Use createRawStreamDeserializePlugin on client.");
-		}
-	});
-}
-/**
-* this plugin serializes only the `message` part of an Error
-* this helps with serializing e.g. a ZodError which has functions attached that cannot be serialized
-*/
-var ShallowErrorPlugin = /* @__PURE__ */ createPlugin({
-	tag: "$TSR/Error",
-	test(value) {
-		return value instanceof Error;
-	},
-	parse: {
-		sync(value, ctx) {
-			return { message: ctx.parse(value.message) };
-		},
-		async async(value, ctx) {
-			return { message: await ctx.parse(value.message) };
-		},
-		stream(value, ctx) {
-			return { message: ctx.parse(value.message) };
-		}
-	},
-	serialize(node, ctx) {
-		return "new Error(" + ctx.serialize(node.message) + ")";
-	},
-	deserialize(node, ctx) {
-		return new Error(ctx.deserialize(node.message));
-	}
-});
-var READABLE_STREAM_FACTORY = {};
-var READABLE_STREAM_FACTORY_CONSTRUCTOR = (stream) => new ReadableStream({ start(controller) {
-	stream.on({
-		next(value) {
-			try {
-				controller.enqueue(value);
-			} catch (_error) {}
-		},
-		throw(value) {
-			controller.error(value);
-		},
-		return() {
-			try {
-				controller.close();
-			} catch (_error) {}
-		}
-	});
-} });
-var ReadableStreamFactoryPlugin = /* @__PURE__ */ createPlugin({
-	tag: "seroval-plugins/web/ReadableStreamFactory",
-	test(value) {
-		return value === READABLE_STREAM_FACTORY;
-	},
-	parse: {
-		sync() {
-			return READABLE_STREAM_FACTORY;
-		},
-		async async() {
-			return await Promise.resolve(READABLE_STREAM_FACTORY);
-		},
-		stream() {
-			return READABLE_STREAM_FACTORY;
-		}
-	},
-	serialize() {
-		return READABLE_STREAM_FACTORY_CONSTRUCTOR.toString();
-	},
-	deserialize() {
-		return READABLE_STREAM_FACTORY;
-	}
-});
-async function drainStream(stream, reader) {
-	try {
-		const result = await reader.read();
-		if (result.done) {
-			stream.return(result.value);
-			reader.releaseLock();
-		} else {
-			stream.next(result.value);
-			await drainStream(stream, reader);
-		}
-	} catch (error) {
-		stream.throw(error);
-	}
-}
-function cleanupStream(reader) {
-	reader.cancel().catch(() => {});
-	reader.releaseLock();
-}
-function toStream(value) {
-	const stream = createStream();
-	const reader = value.getReader();
-	const cleanup = cleanupStream.bind(null, reader);
-	drainStream(stream, reader).catch(cleanup);
-	return [stream, cleanup];
-}
-var defaultSerovalPlugins = [
-	ShallowErrorPlugin,
-	RawStreamSSRPlugin,
-	/* @__PURE__ */ createPlugin({
-		tag: "seroval/plugins/web/ReadableStream",
-		extends: [ReadableStreamFactoryPlugin],
-		test(value) {
-			if (typeof ReadableStream === "undefined") return false;
-			return value instanceof ReadableStream;
-		},
-		parse: {
-			sync(_value, ctx) {
-				return {
-					factory: ctx.parse(READABLE_STREAM_FACTORY),
-					stream: ctx.parse(createStream())
-				};
-			},
-			async async(value, ctx) {
-				return {
-					factory: await ctx.parse(READABLE_STREAM_FACTORY),
-					stream: await ctx.parse(toStream(value)[0])
-				};
-			},
-			stream(value, ctx) {
-				const [stream, cleanup] = toStream(value);
-				ctx.addCleanup(cleanup);
-				return {
-					factory: ctx.parse(READABLE_STREAM_FACTORY),
-					stream: ctx.parse(stream)
-				};
-			}
-		},
-		serialize(node, ctx) {
-			return "(" + ctx.serialize(node.factory) + ")(" + ctx.serialize(node.stream) + ")";
-		},
-		deserialize(node, ctx) {
-			return READABLE_STREAM_FACTORY_CONSTRUCTOR(ctx.deserialize(node.stream));
-		}
-	})
-];
 /**
 * @description Returns the router manifest data that should be sent to the client.
 * This includes only the assets and preloads for the current route and any
@@ -4061,7 +3782,7 @@ var defaultSerovalPlugins = [
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-CA4LowO_.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-C4coOJ7Z.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -4084,7 +3805,7 @@ var manifest = {};
 async function getServerFnById(id, access) {
 	const serverFnInfo = manifest[id];
 	if (!serverFnInfo) throw new Error("Server function info not found for " + id);
-	const fnModule = serverFnInfo.module ?? await serverFnInfo.importer();
+	const fnModule = serverFnInfo.module ??= await serverFnInfo.importer();
 	if (!fnModule) throw new Error("Server function module not resolved for " + id);
 	const action = fnModule[serverFnInfo.functionName];
 	if (!action) throw new Error("Server function module export not resolved for serverFn ID: " + id);
@@ -4096,46 +3817,12 @@ var X_TSS_SERIALIZED = "x-tss-serialized";
 var X_TSS_RAW_RESPONSE = "x-tss-raw";
 /** Content-Type for multiplexed framed responses (RawStream support) */
 var TSS_CONTENT_TYPE_FRAMED = "application/x-tss-framed";
-/**
-* Frame types for binary multiplexing protocol.
-*/
-var FrameType = {
-	/** Seroval JSON chunk (NDJSON line) */
-	JSON: 0,
-	/** Raw stream data chunk */
-	CHUNK: 1,
-	/** Raw stream end (EOF) */
-	END: 2,
-	/** Raw stream error */
-	ERROR: 3
-};
+/** Largest payload accepted by one framed-protocol record. */
+var MAX_FRAME_PAYLOAD_SIZE = 16777216;
+/** Largest number of raw streams accepted in one framed response. */
+var MAX_FRAMED_STREAMS = 1024;
 /** Full Content-Type header value with version parameter */
 var TSS_CONTENT_TYPE_FRAMED_VERSIONED = `${TSS_CONTENT_TYPE_FRAMED}; v=1`;
-function isSafeKey(key) {
-	return key !== "__proto__" && key !== "constructor" && key !== "prototype";
-}
-/**
-* Merge target and source into a new null-proto object, filtering dangerous keys.
-*/
-function safeObjectMerge(target, source) {
-	const result = Object.create(null);
-	if (target) {
-		for (const key of Object.keys(target)) if (isSafeKey(key)) result[key] = target[key];
-	}
-	if (source && typeof source === "object") {
-		for (const key of Object.keys(source)) if (isSafeKey(key)) result[key] = source[key];
-	}
-	return result;
-}
-/**
-* Create a null-prototype object, optionally copying from source.
-*/
-function createNullProtoObject(source) {
-	if (!source) return Object.create(null);
-	const obj = Object.create(null);
-	for (const key of Object.keys(source)) if (isSafeKey(key)) obj[key] = source[key];
-	return obj;
-}
 var GLOBAL_STORAGE_KEY = Symbol.for("tanstack-start:start-storage-context");
 var globalObj = globalThis;
 if (!globalObj[GLOBAL_STORAGE_KEY]) globalObj[GLOBAL_STORAGE_KEY] = new AsyncLocalStorage();
@@ -4204,6 +3891,558 @@ function mergeHeaders(...headers) {
 		else acc.set(key, value);
 		return acc;
 	}, new Headers());
+}
+/**
+* this plugin serializes only the `message` part of an Error
+* this helps with serializing e.g. a ZodError which has functions attached that cannot be serialized
+*/
+var ShallowErrorPlugin = /* @__PURE__ */ createPlugin({
+	tag: "$TSR/Error",
+	test(value) {
+		return value instanceof Error;
+	},
+	parse: {
+		sync(value, ctx) {
+			return { message: ctx.parse(value.message) };
+		},
+		async async(value, ctx) {
+			return { message: await ctx.parse(value.message) };
+		},
+		stream(value, ctx) {
+			return { message: ctx.parse(value.message) };
+		}
+	},
+	serialize(node, ctx) {
+		return "new Error(" + ctx.serialize(node.message) + ")";
+	},
+	deserialize(node, ctx) {
+		return new Error(ctx.deserialize(node.message));
+	}
+});
+function toBase64(bytes) {
+	const chunks = [];
+	for (let i = 0; i < bytes.length; i += 32768) chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)));
+	return btoa(chunks.join(""));
+}
+function fromBase64(value) {
+	const binary = atob(value);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+	return bytes;
+}
+var textDecoder = /* @__PURE__ */ new TextDecoder("utf-8", {
+	fatal: true,
+	ignoreBOM: true
+});
+/** `'t' + utf8` for a valid UTF-8 chunk, otherwise `'b' + base64`. */
+function encodeText(value) {
+	try {
+		return "t" + textDecoder.decode(value);
+	} catch {
+		return "b" + toBase64(value);
+	}
+}
+var textEncoder$3 = /* @__PURE__ */ new TextEncoder();
+function decodeText(value) {
+	const data = value.slice(1);
+	return value[0] === "t" ? textEncoder$3.encode(data) : fromBase64(data);
+}
+/**
+* Pump a byte stream into a Seroval stream, one encoded chunk per read.
+* Returns the Seroval stream and a `stop` function that cancels the reader
+* without signalling the Seroval stream; the abort signal and read failures
+* stop the pump and throw through the Seroval stream.
+*/
+function pumpEncodedStream(readable, encode, signal) {
+	signal?.throwIfAborted();
+	const stream = createStream();
+	const reader = readable.getReader();
+	let active = true;
+	const release = () => {
+		active = false;
+		signal?.removeEventListener("abort", abort);
+		reader.releaseLock();
+	};
+	const stop = (reason) => {
+		if (!active) return false;
+		reader.cancel(reason).catch(() => {});
+		release();
+		return true;
+	};
+	const abort = () => {
+		if (stop(signal.reason)) stream.throw(signal.reason);
+	};
+	signal?.addEventListener("abort", abort);
+	(async () => {
+		try {
+			while (active) {
+				const { done, value } = await reader.read();
+				if (!active) return;
+				if (done) {
+					release();
+					stream.return(void 0);
+					return;
+				}
+				stream.next(encode(value));
+			}
+		} catch (error) {
+			if (stop(error)) stream.throw(error);
+		}
+	})();
+	return [stream, stop];
+}
+/** Rebuild a byte stream from encoded Seroval stream chunks. */
+function fromEncodedStream(source, decode) {
+	let unsubscribe;
+	let done = false;
+	return new ReadableStream({
+		start(controller) {
+			const dispose = source.on({
+				next(value) {
+					if (done) return;
+					try {
+						controller.enqueue(decode(value));
+					} catch (error) {
+						done = true;
+						const stop = unsubscribe;
+						unsubscribe = void 0;
+						stop?.();
+						controller.error(error);
+					}
+				},
+				throw(error) {
+					if (!done) {
+						done = true;
+						unsubscribe = void 0;
+						controller.error(error);
+					}
+				},
+				return() {
+					if (!done) {
+						done = true;
+						unsubscribe = void 0;
+						controller.close();
+					}
+				}
+			});
+			if (done) dispose();
+			else unsubscribe = dispose;
+		},
+		cancel() {
+			const dispose = unsubscribe;
+			unsubscribe = void 0;
+			dispose?.();
+		}
+	});
+}
+/**
+* Serializes a RawStream into JSON requests and static-cache responses.
+* The optional signal stops the source pump when the request is aborted.
+*/
+/* @__NO_SIDE_EFFECTS__ */
+function createRawStreamJSONPlugin(signal) {
+	return /* @__PURE__ */ createPlugin({
+		tag: "tss/RawStream",
+		test: (value) => value instanceof RawStream,
+		parse: { async: async (value, ctx) => {
+			const text = await ctx.parse(value.hint === "text");
+			const [stream] = pumpEncodedStream(value.stream, value.hint === "text" ? encodeText : toBase64, signal);
+			return {
+				text,
+				stream: await ctx.parse(stream)
+			};
+		} },
+		serialize: void 0,
+		deserialize: void 0
+	});
+}
+var RawStreamJSONPlugin = /* @__PURE__ */ createRawStreamJSONPlugin();
+/**
+* Deserializes the JSON shape above back into a `ReadableStream<Uint8Array>`.
+* `test` never matches, so this plugin is inert during serialization and can
+* share a plugin list with `RawStreamJSONPlugin`.
+*/
+var RawStreamJSONDeserializePlugin = /* @__PURE__ */ createPlugin({
+	tag: "tss/RawStream",
+	test: () => false,
+	parse: {},
+	serialize: void 0,
+	deserialize(node, ctx) {
+		return fromEncodedStream(ctx.deserialize(node.stream), ctx.deserialize(node.text) ? decodeText : fromBase64);
+	}
+});
+var READABLE_STREAM_FACTORY = {};
+var READABLE_STREAM_FACTORY_CONSTRUCTOR = (stream) => new ReadableStream({ start(controller) {
+	stream.on({
+		next(value) {
+			try {
+				controller.enqueue(value);
+			} catch (_error) {}
+		},
+		throw(value) {
+			controller.error(value);
+		},
+		return() {
+			try {
+				controller.close();
+			} catch (_error) {}
+		}
+	});
+} });
+var ReadableStreamFactoryPlugin = /* @__PURE__ */ createPlugin({
+	tag: "seroval-plugins/web/ReadableStreamFactory",
+	test(value) {
+		return value === READABLE_STREAM_FACTORY;
+	},
+	parse: {
+		sync() {
+			return READABLE_STREAM_FACTORY;
+		},
+		async async() {
+			return await Promise.resolve(READABLE_STREAM_FACTORY);
+		},
+		stream() {
+			return READABLE_STREAM_FACTORY;
+		}
+	},
+	serialize() {
+		return READABLE_STREAM_FACTORY_CONSTRUCTOR.toString();
+	},
+	deserialize() {
+		return READABLE_STREAM_FACTORY;
+	}
+});
+async function drainStream(stream, reader) {
+	try {
+		while (true) {
+			const result = await reader.read();
+			if (result.done) {
+				stream.return(result.value);
+				reader.releaseLock();
+				break;
+			}
+			stream.next(result.value);
+		}
+	} catch (error) {
+		reader.releaseLock();
+		stream.throw(error);
+	}
+}
+function cleanupStream(reader) {
+	reader.cancel().catch(() => {});
+	reader.releaseLock();
+}
+function toStream(value) {
+	const stream = createStream();
+	const reader = value.getReader();
+	const cleanup = cleanupStream.bind(null, reader);
+	drainStream(stream, reader).catch(cleanup);
+	return [stream, cleanup];
+}
+var ReadableStreamPlugin = /* @__PURE__ */ createPlugin({
+	tag: "seroval/plugins/web/ReadableStream",
+	extends: [ReadableStreamFactoryPlugin],
+	test(value) {
+		if (typeof ReadableStream === "undefined") return false;
+		return value instanceof ReadableStream;
+	},
+	parse: {
+		sync(_value, ctx) {
+			return {
+				factory: ctx.parse(READABLE_STREAM_FACTORY),
+				stream: ctx.parse(createStream())
+			};
+		},
+		async async(value, ctx) {
+			return {
+				factory: await ctx.parse(READABLE_STREAM_FACTORY),
+				stream: await ctx.parse(toStream(value)[0])
+			};
+		},
+		stream(value, ctx) {
+			const [stream, cleanup] = toStream(value);
+			ctx.addCleanup(cleanup);
+			return {
+				factory: ctx.parse(READABLE_STREAM_FACTORY),
+				stream: ctx.parse(stream)
+			};
+		}
+	},
+	serialize(node, ctx) {
+		return "(" + ctx.serialize(node.factory) + ")(" + ctx.serialize(node.stream) + ")";
+	},
+	deserialize(node, ctx) {
+		const stream = ctx.deserialize(node.stream);
+		if (!stream || typeof stream !== "object" || !isStream(stream)) throw new Error("Expected a stream source.");
+		return READABLE_STREAM_FACTORY_CONSTRUCTOR(stream);
+	}
+});
+/**
+* Plugins for JSON transport from a client: serializes RawStream arguments
+* and reads plain JSON responses, which never carry RawStream nodes.
+*/
+/* @__NO_SIDE_EFFECTS__ */
+function createDefaultSerovalPlugins(signal) {
+	return [
+		ShallowErrorPlugin,
+		signal ? /* @__PURE__ */ createRawStreamJSONPlugin(signal) : RawStreamJSONPlugin,
+		ReadableStreamPlugin
+	];
+}
+/**
+* `defaultSerovalPlugins` plus RawStream deserialization, for JSON that may
+* carry RawStream nodes: server-function request bodies and cached static
+* responses. Seroval deserializes by first tag match, so the deserialize half
+* precedes the serialize half; it never matches during serialization.
+*/
+var defaultSerovalDeserializerPlugins = [RawStreamJSONDeserializePlugin, .../* @__PURE__ */ createDefaultSerovalPlugins()];
+/**
+* Server-side RawStream plugin for multiplexed server-function responses.
+* The `hint` is ignored: framed responses always carry raw bytes.
+*/
+/* @__NO_SIDE_EFFECTS__ */
+function createRawStreamRPCPlugin(onRawStream) {
+	let nextStreamId = 1;
+	return /* @__PURE__ */ createPlugin({
+		tag: "tss/RawStream",
+		test(value) {
+			return value instanceof RawStream;
+		},
+		parse: { stream(value, ctx) {
+			const streamId = nextStreamId++;
+			onRawStream(streamId, value.stream);
+			return { streamId: ctx.parse(streamId) };
+		} },
+		serialize: void 0,
+		deserialize: void 0
+	});
+}
+/** Start's serialization adapters followed by `routerPlugins`. */
+function getSerovalPlugins(routerPlugins) {
+	return [...(getStartOptions()?.serializationAdapters)?.map(makeSerovalPlugin) ?? [], ...routerPlugins];
+}
+/**
+* Binary frame protocol for multiplexing JSON and raw streams over HTTP.
+*
+* Frame format: [type:1][streamId:4][length:4][payload:length]
+* - type: 1 byte - frame type (JSON, CHUNK, END, ERROR)
+* - streamId: 4 bytes big-endian uint32 - stream identifier
+* - length: 4 bytes big-endian uint32 - payload length
+* - payload: variable length bytes
+*/
+/** Cached TextEncoder for frame encoding */
+var textEncoder$2 = new TextEncoder();
+/** Shared empty payload for END frames - avoids allocation per call */
+var EMPTY_PAYLOAD = /* @__PURE__ */ new Uint8Array(0);
+var MAX_ERROR_MESSAGE_CODE_UNITS = 4096;
+/**
+* Encodes a single frame with header and payload.
+*/
+function encodeFrame(type, streamId, payload) {
+	if (payload.byteLength > 16777216) throw new RangeError(`Frame payload exceeds ${MAX_FRAME_PAYLOAD_SIZE} bytes`);
+	const frame = new Uint8Array(9 + payload.length);
+	frame[0] = type;
+	frame[1] = streamId >>> 24 & 255;
+	frame[2] = streamId >>> 16 & 255;
+	frame[3] = streamId >>> 8 & 255;
+	frame[4] = streamId & 255;
+	frame[5] = payload.length >>> 24 & 255;
+	frame[6] = payload.length >>> 16 & 255;
+	frame[7] = payload.length >>> 8 & 255;
+	frame[8] = payload.length & 255;
+	frame.set(payload, 9);
+	return frame;
+}
+/** Encodes an error message payload, truncated to a bounded length. */
+function encodeErrorPayload(error) {
+	const originalMessage = error instanceof Error ? error.message : String(error ?? "Unknown error");
+	const message = originalMessage.length > MAX_ERROR_MESSAGE_CODE_UNITS ? `${originalMessage.slice(0, MAX_ERROR_MESSAGE_CODE_UNITS)}…` : originalMessage;
+	return textEncoder$2.encode(message);
+}
+/**
+* Creates a multiplexed ReadableStream from serialized response records.
+*
+* A record's JSON frame is admitted before any raw stream referenced by that
+* record starts. Raw streams from admitted records are pumped concurrently.
+* The caller bounds the stream count before records reach this function.
+*/
+function createMultiplexedStream(recordStream, options = {}) {
+	let controller;
+	let stopped = false;
+	let activePumps = 0;
+	let wakeDemand;
+	let admission;
+	const readers = /* @__PURE__ */ new Set();
+	const pendingRawStreams = /* @__PURE__ */ new Set();
+	const abortOutput = () => errorOutput(options.signal?.reason);
+	const wakeAdmission = () => {
+		const wake = wakeDemand;
+		wakeDemand = void 0;
+		wake?.();
+	};
+	const cancelReader = (reader, reason) => {
+		reader.cancel(reason).catch(() => {});
+	};
+	const cancelStream = (stream, reason) => {
+		stream.cancel(reason).catch(() => {});
+	};
+	const stop = (reason) => {
+		if (stopped) return false;
+		stopped = [reason];
+		options.signal?.removeEventListener("abort", abortOutput);
+		wakeAdmission();
+		for (const reader of readers) cancelReader(reader, reason);
+		for (const stream of pendingRawStreams) cancelStream(stream, reason);
+		pendingRawStreams.clear();
+		return true;
+	};
+	const errorOutput = (error) => {
+		if (!stop(error)) return;
+		try {
+			controller.error(error);
+		} catch {}
+	};
+	const waitForDemand = async () => {
+		while (!stopped && (controller.desiredSize ?? 0) <= 0) await new Promise((resolve) => {
+			wakeDemand = resolve;
+		});
+		return !stopped;
+	};
+	const admitFrame = (type, streamId, payload) => {
+		if (stopped) return false;
+		if (!admission && (controller.desiredSize ?? 0) > 0) {
+			controller.enqueue(encodeFrame(type, streamId, payload));
+			return true;
+		}
+		const runAdmission = async () => {
+			if (!await waitForDemand()) return false;
+			controller.enqueue(encodeFrame(type, streamId, payload));
+			return true;
+		};
+		const result = admission ? admission.then(runAdmission) : runAdmission();
+		const clearAdmission = () => {
+			if (admission === tail) admission = void 0;
+		};
+		const tail = result.then(clearAdmission, clearAdmission);
+		admission = tail;
+		return result;
+	};
+	const maybeClose = () => {
+		if (activePumps !== 0 || !stop()) return;
+		try {
+			controller.close();
+		} catch {}
+	};
+	const startPump = (pump) => {
+		activePumps++;
+		pump().then(() => {
+			activePumps--;
+			maybeClose();
+		}, (error) => {
+			activePumps--;
+			errorOutput(error);
+		});
+	};
+	async function pumpRawStream(streamId, stream) {
+		const reader = stream.getReader();
+		readers.add(reader);
+		try {
+			while (!stopped) {
+				const { done, value } = await reader.read();
+				if (stopped) return;
+				if (done) {
+					const frameAdmission = admitFrame(2, streamId, EMPTY_PAYLOAD);
+					if (frameAdmission !== true) await frameAdmission;
+					return;
+				}
+				if (!(value instanceof Uint8Array)) throw new TypeError("RawStream chunks must be Uint8Array");
+				let offset = 0;
+				do {
+					const chunk = value.byteLength <= 16777216 ? value : value.subarray(offset, offset + MAX_FRAME_PAYLOAD_SIZE);
+					const frameAdmission = admitFrame(1, streamId, chunk);
+					if (frameAdmission !== true && (frameAdmission === false || !await frameAdmission)) return;
+					offset += MAX_FRAME_PAYLOAD_SIZE;
+				} while (offset < value.byteLength);
+			}
+		} catch (error) {
+			if (!stopped) {
+				const frameAdmission = admitFrame(3, streamId, encodeErrorPayload(error));
+				if (frameAdmission !== true) await frameAdmission;
+			}
+		} finally {
+			readers.delete(reader);
+			reader.releaseLock();
+		}
+	}
+	async function pumpRecords() {
+		const reader = recordStream.getReader();
+		readers.add(reader);
+		try {
+			while (!stopped) {
+				const { done, value } = await reader.read();
+				if (stopped) {
+					if (!done) for (const registration of value.rawStreams) cancelStream(registration.stream, stopped[0]);
+					return;
+				}
+				if (done) return;
+				for (const registration of value.rawStreams) pendingRawStreams.add(registration.stream);
+				const frameAdmission = admitFrame(0, 0, value.json);
+				if (frameAdmission !== true && (frameAdmission === false || !await frameAdmission)) return;
+				for (const registration of value.rawStreams) {
+					pendingRawStreams.delete(registration.stream);
+					startPump(pumpRawStream.bind(void 0, registration.id, registration.stream));
+				}
+			}
+		} catch (error) {
+			if (!stopped) errorOutput(error);
+		} finally {
+			readers.delete(reader);
+			reader.releaseLock();
+		}
+	}
+	return new ReadableStream({
+		start(ctrl) {
+			controller = ctrl;
+			if (options.signal?.aborted) {
+				cancelStream(recordStream, options.signal.reason);
+				errorOutput(options.signal.reason);
+				return;
+			}
+			options.signal?.addEventListener("abort", abortOutput, { once: true });
+			startPump(pumpRecords);
+		},
+		pull() {
+			wakeAdmission();
+		},
+		cancel(reason) {
+			if (stop(reason)) options.onCancel?.(reason);
+		}
+	});
+}
+function isSafeKey(key) {
+	return key !== "__proto__" && key !== "constructor" && key !== "prototype";
+}
+/**
+* Merge target and source into a new null-proto object, filtering dangerous keys.
+*/
+function safeObjectMerge(target, source) {
+	const result = Object.create(null);
+	if (target) {
+		for (const key of Object.keys(target)) if (isSafeKey(key)) result[key] = target[key];
+	}
+	if (source && typeof source === "object") {
+		for (const key of Object.keys(source)) if (isSafeKey(key)) result[key] = source[key];
+	}
+	return result;
+}
+/**
+* Create a null-prototype object, optionally copying from source.
+*/
+function createNullProtoObject(source) {
+	if (!source) return Object.create(null);
+	const obj = Object.create(null);
+	for (const key of Object.keys(source)) if (isSafeKey(key)) obj[key] = source[key];
+	return obj;
 }
 function flattenMiddlewares(middlewares, maxDepth = 100) {
 	const seen = /* @__PURE__ */ new Set();
@@ -4300,172 +4539,879 @@ async function getFailureResponse(opts, ctx) {
 	if (typeof opts.failureResponse === "function") return opts.failureResponse(ctx);
 	return opts.failureResponse?.clone() ?? new Response("Forbidden", { status: 403 });
 }
-function getDefaultSerovalPlugins() {
-	return [...(getStartOptions()?.serializationAdapters)?.map(makeSerovalPlugin) ?? [], ...defaultSerovalPlugins];
-}
+var GLOBAL_TSR = "$_TSR";
 /**
-* Binary frame protocol for multiplexing JSON and raw streams over HTTP.
-*
-* Frame format: [type:1][streamId:4][length:4][payload:length]
-* - type: 1 byte - frame type (JSON, CHUNK, END, ERROR)
-* - streamId: 4 bytes big-endian uint32 - stream identifier
-* - length: 4 bytes big-endian uint32 - payload length
-* - payload: variable length bytes
+* Create a Seroval plugin for server-side serialization only. `tracker.didRun`
+* becomes true once the plugin serialized a value.
 */
-/** Cached TextEncoder for frame encoding */
-var textEncoder = new TextEncoder();
-/** Shared empty payload for END frames - avoids allocation per call */
-var EMPTY_PAYLOAD = /* @__PURE__ */ new Uint8Array(0);
-/**
-* Encodes a single frame with header and payload.
-*/
-function encodeFrame(type, streamId, payload) {
-	const frame = new Uint8Array(9 + payload.length);
-	frame[0] = type;
-	frame[1] = streamId >>> 24 & 255;
-	frame[2] = streamId >>> 16 & 255;
-	frame[3] = streamId >>> 8 & 255;
-	frame[4] = streamId & 255;
-	frame[5] = payload.length >>> 24 & 255;
-	frame[6] = payload.length >>> 16 & 255;
-	frame[7] = payload.length >>> 8 & 255;
-	frame[8] = payload.length & 255;
-	frame.set(payload, 9);
-	return frame;
-}
-/**
-* Encodes a JSON frame (type 0, streamId 0).
-*/
-function encodeJSONFrame(json) {
-	return encodeFrame(FrameType.JSON, 0, textEncoder.encode(json));
-}
-/**
-* Encodes a raw stream chunk frame.
-*/
-function encodeChunkFrame(streamId, chunk) {
-	return encodeFrame(FrameType.CHUNK, streamId, chunk);
-}
-/**
-* Encodes a raw stream end frame.
-*/
-function encodeEndFrame(streamId) {
-	return encodeFrame(FrameType.END, streamId, EMPTY_PAYLOAD);
-}
-/**
-* Encodes a raw stream error frame.
-*/
-function encodeErrorFrame(streamId, error) {
-	const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
-	return encodeFrame(FrameType.ERROR, streamId, textEncoder.encode(message));
-}
-/**
-* Creates a multiplexed ReadableStream from JSON stream and raw streams.
-*
-* The JSON stream emits NDJSON lines (from seroval's toCrossJSONStream).
-* Raw streams are pumped concurrently, interleaved with JSON frames.
-*
-* Supports late stream registration for RawStreams discovered after initial
-* serialization (e.g., from resolved Promises).
-*
-* @param jsonStream Stream of JSON strings (each string is one NDJSON line)
-* @param rawStreams Map of stream IDs to raw binary streams (known at start)
-* @param lateStreamSource Optional stream of late registrations for streams discovered later
-*/
-function createMultiplexedStream(jsonStream, rawStreams, lateStreamSource) {
-	let controller;
-	let cancelled = false;
-	const readers = [];
-	const enqueue = (frame) => {
-		if (cancelled) return false;
-		try {
-			controller.enqueue(frame);
-			return true;
-		} catch {
-			return false;
-		}
-	};
-	const errorOutput = (error) => {
-		if (cancelled) return;
-		cancelled = true;
-		try {
-			controller.error(error);
-		} catch {}
-		for (const reader of readers) reader.cancel().catch(() => {});
-	};
-	async function pumpRawStream(streamId, stream) {
-		const reader = stream.getReader();
-		readers.push(reader);
-		try {
-			while (!cancelled) {
-				const { done, value } = await reader.read();
-				if (done) {
-					enqueue(encodeEndFrame(streamId));
-					return;
-				}
-				if (!enqueue(encodeChunkFrame(streamId, value))) return;
-			}
-		} catch (error) {
-			enqueue(encodeErrorFrame(streamId, error));
-		} finally {
-			reader.releaseLock();
-		}
-	}
-	async function pumpJSON() {
-		const reader = jsonStream.getReader();
-		readers.push(reader);
-		try {
-			while (!cancelled) {
-				const { done, value } = await reader.read();
-				if (done) return;
-				if (!enqueue(encodeJSONFrame(value))) return;
-			}
-		} catch (error) {
-			errorOutput(error);
-			throw error;
-		} finally {
-			reader.releaseLock();
-		}
-	}
-	async function pumpLateStreams() {
-		if (!lateStreamSource) return [];
-		const lateStreamPumps = [];
-		const reader = lateStreamSource.getReader();
-		readers.push(reader);
-		try {
-			while (!cancelled) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				lateStreamPumps.push(pumpRawStream(value.id, value.stream));
-			}
-		} finally {
-			reader.releaseLock();
-		}
-		return lateStreamPumps;
-	}
-	return new ReadableStream({
-		async start(ctrl) {
-			controller = ctrl;
-			const pumps = [pumpJSON()];
-			for (const [streamId, stream] of rawStreams) pumps.push(pumpRawStream(streamId, stream));
-			if (lateStreamSource) pumps.push(pumpLateStreams());
-			try {
-				const latePumps = (await Promise.all(pumps)).find(Array.isArray);
-				if (latePumps && latePumps.length > 0) await Promise.all(latePumps);
-				if (!cancelled) try {
-					controller.close();
-				} catch {}
-			} catch {}
+/* @__NO_SIDE_EFFECTS__ */
+function makeSsrSerovalPlugin(serializationAdapter, tracker) {
+	return /* @__PURE__ */ createPlugin({
+		tag: "$TSR/t/" + serializationAdapter.key,
+		test: serializationAdapter.test,
+		parse: { stream(value, ctx) {
+			return { v: ctx.parse(serializationAdapter.toSerializable(value)) };
+		} },
+		serialize(node, ctx) {
+			if (tracker) tracker.didRun = true;
+			return GLOBAL_TSR + ".t.get(\"" + serializationAdapter.key + "\")(" + ctx.serialize(node.v) + ")";
 		},
-		cancel() {
-			cancelled = true;
-			for (const reader of readers) reader.cancel().catch(() => {});
-			readers.length = 0;
-		}
+		deserialize: void 0
 	});
+}
+var tsrScript_default = "self.$_TSR={h(){this.hydrated=!0,this.c()},e(){this.streamEnded=!0,this.c()},c(){this.hydrated&&this.streamEnded&&(delete self.$_TSR,delete self.$R.tsr)},p(e){this.initialized?e():this.buffer.push(e)},buffer:[]}";
+var textEncoder$1 = new TextEncoder();
+var DOCUMENT_CLOSE = "</body></html>";
+var SCRIPT_CLOSE = "<\/script>";
+DOCUMENT_CLOSE.indexOf("y");
+SCRIPT_CLOSE.indexOf("p");
+textEncoder$1.encode(DOCUMENT_CLOSE);
+textEncoder$1.encode(SCRIPT_CLOSE);
+function encodeIntoBoundedChunk(source, sourceOffset, output, outputOffset = 0) {
+	return textEncoder$1.encodeInto(sourceOffset === 0 ? source : source.slice(sourceOffset), outputOffset === 0 ? output : output.subarray(outputOffset));
+}
+var encoder = new TextEncoder();
+var SOURCE_SEPARATOR = ";";
+var MAX_INITIAL_SOURCE_CODE_UNITS = 16384;
+var MAX_BACKLOG_CODE_UNITS = 16777216;
+var MAX_BACKLOG_SOURCES = 4096;
+var MIN_OUTPUT_BYTES = 256;
+var MAX_DIRECT_CODE_UNITS = 16384;
+var MAX_HYDRATION_OUTPUT_CHUNK_BYTES = 65536;
+var MAX_DYNAMIC_RECORD_CODE_UNITS = MAX_HYDRATION_OUTPUT_CHUNK_BYTES;
+var STREAM_PART_ATTRIBUTE = "data-tsr-stream-part";
+var INITIAL_CLEANUP_SOURCE = `{let s=document.currentScript,p;while((p=s.previousElementSibling)&&p.hasAttribute('${STREAM_PART_ATTRIBUTE}'))p.remove();s.remove()}`;
+var INITIAL_CLEANUP_SUFFIX = SOURCE_SEPARATOR + INITIAL_CLEANUP_SOURCE;
+var DYNAMIC_CLOSE_SOURCE = "document.currentScript.remove()<\/script>";
+var HYDRATION_SCRIPT_BOUNDARY_SOURCE = "document.currentScript.remove();/*$tsr-stream-boundary*/";
+var HYDRATION_SCRIPT_BOUNDARY_SUFFIX = ";/*$tsr-stream-boundary*/<\/script>";
+HYDRATION_SCRIPT_BOUNDARY_SUFFIX.lastIndexOf("*");
+encoder.encode(HYDRATION_SCRIPT_BOUNDARY_SUFFIX);
+var ROUTER_PREFIX = GLOBAL_TSR + ".router=";
+var PROMISE_PREFIX = GLOBAL_TSR + ".p(()=>";
+var DEFAULT_INITIAL_SOURCES = [getCrossReferenceHeader("tsr"), tsrScript_default];
+var HydrationScriptOutputState = {
+	Waiting: 0,
+	Ready: 1,
+	Active: 2,
+	Done: 3,
+	Failed: 4
+};
+function escapeAttribute(value) {
+	return value.replace(/[&"'<>]/g, (char) => `&#${char.charCodeAt(0)};`);
+}
+function createInitialTags(sources, nonce) {
+	const before = [];
+	for (const source of sources) {
+		if (!source) continue;
+		const previous = before[before.length - 1];
+		if (previous?.children && previous.children.length + 1 + source.length <= MAX_INITIAL_SOURCE_CODE_UNITS) previous.children += SOURCE_SEPARATOR + source;
+		else before.push({
+			tag: "script",
+			attrs: {
+				nonce,
+				[STREAM_PART_ATTRIBUTE]: ""
+			},
+			children: source
+		});
+	}
+	const lastHydrationTag = before[before.length - 1];
+	if (lastHydrationTag) {
+		const lastSource = lastHydrationTag.children;
+		if (lastSource.length + INITIAL_CLEANUP_SUFFIX.length <= MAX_INITIAL_SOURCE_CODE_UNITS) lastHydrationTag.children = lastSource + INITIAL_CLEANUP_SUFFIX;
+		else before.push({
+			tag: "script",
+			attrs: {
+				nonce,
+				[STREAM_PART_ATTRIBUTE]: ""
+			},
+			children: INITIAL_CLEANUP_SOURCE
+		});
+	}
+	return {
+		before,
+		boundary: {
+			tag: "script",
+			attrs: { nonce },
+			children: HYDRATION_SCRIPT_BOUNDARY_SOURCE
+		}
+	};
+}
+var HydrationScriptsOwner = class {
+	constructor(nonce, initialSources) {
+		this.nonce = nonce;
+		this.queuedSources = [];
+		this.queuedSourceHead = 0;
+		this.initialTaken = false;
+		this.barrierLifted = false;
+		this.producerDone = false;
+		this.retainedSources = 0;
+		this.regularCodeUnits = 0;
+		this.hasOversizedSource = false;
+		this.segmentIndex = 0;
+		this.closingSegmentIndex = 0;
+		this.source = "";
+		this.sourceOffset = 0;
+		this.outputCapacity = MIN_OUTPUT_BYTES;
+		this.outputState = HydrationScriptOutputState.Waiting;
+		this.takeInitialHydrationScriptTags = this.takeInitialHydrationScriptTags.bind(this);
+		const seedSources = initialSources ?? DEFAULT_INITIAL_SOURCES;
+		for (const seedSource of seedSources) {
+			if (!this.account(seedSource)) break;
+			this.queuedSources.push(seedSource);
+		}
+	}
+	get state() {
+		return this.outputState;
+	}
+	get error() {
+		return this.outputError;
+	}
+	notify() {
+		try {
+			this.listener?.();
+		} catch (listenerError) {
+			console.error("Hydration script output listener error:", listenerError);
+		}
+	}
+	refresh(notifyChange = true) {
+		const next = this.outputState === HydrationScriptOutputState.Failed ? HydrationScriptOutputState.Failed : this.active ? HydrationScriptOutputState.Active : typeof this.consumer === "object" && this.initialTaken && this.barrierLifted && !this.queueIsEmpty() ? HydrationScriptOutputState.Ready : this.producerDone && this.initialTaken && this.queueIsEmpty() ? HydrationScriptOutputState.Done : HydrationScriptOutputState.Waiting;
+		if (this.outputState !== next) {
+			this.outputState = next;
+			if (notifyChange) this.notify();
+		}
+	}
+	clearTimeoutIfSet() {
+		if (this.timeout !== void 0) {
+			clearTimeout(this.timeout);
+			this.timeout = void 0;
+		}
+	}
+	queueIsEmpty() {
+		return this.queuedSourceHead === this.queuedSources.length;
+	}
+	clearQueue() {
+		this.queuedSources = [];
+		this.queuedSourceHead = 0;
+	}
+	dropBufferedOutput() {
+		this.clearQueue();
+		this.active = void 0;
+		this.retainedSources = 0;
+		this.regularCodeUnits = 0;
+		this.hasOversizedSource = false;
+		this.segmentIndex = 0;
+		this.closingSegmentIndex = 0;
+		this.source = "";
+		this.sourceOffset = 0;
+		this.outputCapacity = MIN_OUTPUT_BYTES;
+		this.opening = void 0;
+	}
+	fail(reason) {
+		if (this.consumer === "cleaned" || this.outputState === HydrationScriptOutputState.Failed) return;
+		this.outputError = reason;
+		this.clearTimeoutIfSet();
+		this.dropBufferedOutput();
+		this.outputState = HydrationScriptOutputState.Failed;
+		this.notify();
+	}
+	rejectBacklog(kind) {
+		this.fail(/* @__PURE__ */ new Error(`SSR hydration backlog exceeded maximum ${kind} count`));
+		return false;
+	}
+	account(nextSource) {
+		if (this.retainedSources === MAX_BACKLOG_SOURCES) return this.rejectBacklog("source-part");
+		if (nextSource.length > MAX_BACKLOG_CODE_UNITS) {
+			if (this.hasOversizedSource) return this.rejectBacklog("code-unit");
+			this.hasOversizedSource = true;
+		} else if (this.regularCodeUnits + nextSource.length > MAX_BACKLOG_CODE_UNITS) return this.rejectBacklog("code-unit");
+		else this.regularCodeUnits += nextSource.length;
+		this.retainedSources++;
+		return true;
+	}
+	releaseSource(part) {
+		this.retainedSources--;
+		if (part.length > MAX_BACKLOG_CODE_UNITS) this.hasOversizedSource = false;
+		else this.regularCodeUnits -= part.length;
+	}
+	releaseAccounting(batch) {
+		for (const part of batch) if (part !== void 0) this.releaseSource(part);
+	}
+	liftBarrier() {
+		if (this.consumer !== "cleaned" && !this.barrierLifted) {
+			this.barrierLifted = true;
+			this.refresh();
+		}
+	}
+	producerCanWrite() {
+		return this.consumer !== "cleaned" && this.outputState !== HydrationScriptOutputState.Failed && !this.producerDone;
+	}
+	pushSource(nextSource) {
+		if (!this.producerCanWrite()) return false;
+		if (this.account(nextSource)) {
+			this.queuedSources.push(nextSource);
+			if (this.initialTaken) this.refresh();
+		} else return false;
+		return this.producerCanWrite();
+	}
+	takeQueuedBatch(batchLength) {
+		if (this.queuedSourceHead === 0 && batchLength === this.queuedSources.length) {
+			const batch = this.queuedSources;
+			this.clearQueue();
+			return batch;
+		}
+		const end = this.queuedSourceHead + batchLength;
+		const batch = this.queuedSources.slice(this.queuedSourceHead, end);
+		for (let index = this.queuedSourceHead; index < end; index++) this.queuedSources[index] = void 0;
+		this.queuedSourceHead = end;
+		if (this.queueIsEmpty()) this.clearQueue();
+		else if (this.queuedSourceHead >= 1024 && this.queuedSourceHead >= this.queuedSources.length - this.queuedSourceHead) {
+			this.queuedSources = this.queuedSources.slice(this.queuedSourceHead);
+			this.queuedSourceHead = 0;
+		}
+		return batch;
+	}
+	release(batch) {
+		this.releaseAccounting(batch);
+		this.active = void 0;
+		this.source = "";
+		this.sourceOffset = 0;
+		this.refresh(false);
+	}
+	advanceSource() {
+		const batch = this.active;
+		if (this.segmentIndex > 0 && this.segmentIndex < this.closingSegmentIndex) {
+			const partIndex = this.segmentIndex - 1 >> 1;
+			if (this.segmentIndex % 2 === 1) {
+				const part = batch[partIndex];
+				if (part !== void 0) {
+					this.releaseSource(part);
+					batch[partIndex] = void 0;
+				}
+			}
+		}
+		this.segmentIndex++;
+		if (this.segmentIndex < this.closingSegmentIndex) {
+			const partIndex = this.segmentIndex - 1 >> 1;
+			this.source = this.segmentIndex % 2 === 1 ? batch[partIndex] : SOURCE_SEPARATOR;
+		} else if (this.segmentIndex === this.closingSegmentIndex) this.source = DYNAMIC_CLOSE_SOURCE;
+		else this.release(batch);
+		this.sourceOffset = 0;
+	}
+	pullActive() {
+		const bytes = new Uint8Array(this.outputCapacity);
+		let offset = 0;
+		while (this.active) if (this.sourceOffset === this.source.length) this.advanceSource();
+		else if (offset === bytes.length) break;
+		else {
+			const result = encodeIntoBoundedChunk(this.source, this.sourceOffset, bytes, offset);
+			if (result.read === 0) break;
+			this.sourceOffset += result.read;
+			offset += result.written;
+		}
+		if (offset === 0) throw new Error("SSR router script record produced no output");
+		if (offset === bytes.length) return bytes;
+		return offset * 2 < bytes.length ? bytes.slice(0, offset) : bytes.subarray(0, offset);
+	}
+	pullReady() {
+		const scriptOpening = this.opening ??= this.nonce ? `<script nonce="${escapeAttribute(this.nonce)}">` : "<script>";
+		let codeUnits = scriptOpening.length + 40;
+		let batchLength = 0;
+		for (let index = this.queuedSourceHead; index < this.queuedSources.length; index++) {
+			const part = this.queuedSources[index];
+			const nextCodeUnits = codeUnits + 1 + part.length;
+			if (batchLength > 0 && nextCodeUnits > MAX_DYNAMIC_RECORD_CODE_UNITS) break;
+			codeUnits = nextCodeUnits;
+			batchLength++;
+			if (codeUnits > MAX_DYNAMIC_RECORD_CODE_UNITS) break;
+		}
+		const batch = this.takeQueuedBatch(batchLength);
+		if (codeUnits <= MAX_DIRECT_CODE_UNITS) {
+			const joined = batch.length === 1 ? batch[0] : batch.join(SOURCE_SEPARATOR);
+			const bytes = encoder.encode(scriptOpening + joined + ";document.currentScript.remove()<\/script>");
+			this.release(batch);
+			return bytes;
+		}
+		this.active = batch;
+		this.segmentIndex = 0;
+		this.closingSegmentIndex = (batch.length << 1) + 1;
+		this.source = scriptOpening;
+		this.sourceOffset = 0;
+		this.outputCapacity = Math.max(MIN_OUTPUT_BYTES, Math.min(MAX_HYDRATION_OUTPUT_CHUNK_BYTES, codeUnits));
+		this.outputState = HydrationScriptOutputState.Active;
+		return this.pullActive();
+	}
+	pullChunk() {
+		if (this.outputState !== HydrationScriptOutputState.Ready && this.outputState !== HydrationScriptOutputState.Active) throw new Error("Hydration script output is not ready");
+		try {
+			return this.outputState === HydrationScriptOutputState.Ready ? this.pullReady() : this.pullActive();
+		} catch (cause) {
+			this.fail(cause);
+			throw cause;
+		}
+	}
+	subscribe(onChange) {
+		if (this.consumer === "cleaned") return () => {};
+		if (this.listener) throw new Error("SSR hydration output already has a subscriber");
+		this.listener = onChange;
+		return () => {
+			if (this.listener === onChange) this.listener = void 0;
+		};
+	}
+	pushSerializedSource(data, initial, wrap) {
+		let serialized = initial ? ROUTER_PREFIX + data : data;
+		if (wrap) serialized = PROMISE_PREFIX + serialized + ")";
+		return this.pushSource(serialized);
+	}
+	finish() {
+		if (!this.pushSource("$_TSR.e()")) return;
+		this.producerDone = true;
+		this.clearTimeoutIfSet();
+		this.refresh();
+	}
+	takeInitialHydrationScriptTags() {
+		if (this.consumer === "cleaned" || this.outputState === HydrationScriptOutputState.Failed || this.initialTaken) return;
+		const sources = this.queuedSources;
+		const tags = createInitialTags(sources, this.nonce);
+		this.initialTaken = true;
+		this.releaseAccounting(sources);
+		sources.length = 0;
+		this.queuedSourceHead = 0;
+		this.refresh();
+		return tags;
+	}
+	/**
+	* Opt this request out of hydration output entirely (for example a
+	* `hydrate: false` page). Drops the queued bootstrap sources, marks the
+	* producer done, and makes the fast pass-through path reservable without
+	* a rendered `<Scripts>` boundary. Must run before the initial take and
+	* before serialization produces output.
+	*/
+	disableHydration() {
+		if (this.consumer === "cleaned" || this.outputState === HydrationScriptOutputState.Failed) return;
+		if (this.initialTaken || this.consumer !== void 0 || this.producerDone) invariant();
+		this.releaseAccounting(this.queuedSources);
+		this.clearQueue();
+		this.initialTaken = true;
+		this.barrierLifted = true;
+		this.producerDone = true;
+		this.refresh();
+	}
+	isInitialTaken() {
+		return this.initialTaken;
+	}
+	skipInitialTake() {
+		if (this.consumer !== "cleaned" && !this.initialTaken) {
+			this.initialTaken = true;
+			this.refresh();
+		}
+	}
+	claimOutput() {
+		if (this.consumer === "cleaned") throw new Error("SSR hydration script output is already cleaned up");
+		if (this.consumer !== void 0) throw new Error("SSR hydration script output already has a consumer");
+		this.consumer = this;
+		this.refresh(false);
+		return this;
+	}
+	reserveFastPath(output) {
+		const ownsConsumer = this.consumer === output;
+		if (this.outputState === HydrationScriptOutputState.Failed || !this.producerDone || !this.initialTaken || !this.queueIsEmpty() || this.active || !ownsConsumer) return false;
+		this.consumer = "fast-path";
+		return true;
+	}
+	startSerializationTimeout(timeoutMs) {
+		if (this.consumer === "cleaned" || this.outputState === HydrationScriptOutputState.Failed || this.producerDone || this.timeout !== void 0) return;
+		this.timeout = setTimeout(() => {
+			this.timeout = void 0;
+			if (this.consumer !== "cleaned" && this.outputState !== HydrationScriptOutputState.Failed && !this.producerDone) {
+				console.error("Serialization timeout after app render finished");
+				this.fail(/* @__PURE__ */ new Error("Serialization timeout after app render finished"));
+			}
+		}, timeoutMs);
+	}
+	cleanup() {
+		if (this.consumer === "cleaned") return;
+		this.consumer = "cleaned";
+		this.clearTimeoutIfSet();
+		this.dropBufferedOutput();
+		this.listener = void 0;
+		this.outputError = void 0;
+		this.producerDone = true;
+		this.outputState = HydrationScriptOutputState.Done;
+	}
+};
+/** Create the hydration-script owner for one server request. */
+function createHydrationScripts(nonce, initialSources) {
+	return new HydrationScriptsOwner(nonce, initialSources);
+}
+var nodeBuffer = globalThis.Buffer;
+var toBase64Fast = nodeBuffer ? (bytes) => nodeBuffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64") : toBase64;
+var BINARY_FACTORY = () => {};
+var TEXT_FACTORY = () => {};
+var FACTORY_BINARY = `((s,u=1)=>new ReadableStream({start(c,f){f=s.on({next(b){const d=atob(b),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);c.enqueue(a)},throw(e){s=u=0;c.error(e)},return(){s=u=0;c.close()}});u=u&&f},cancel(){u&&u()}}))`;
+var FACTORY_TEXT = `((s,u=1,e=new TextEncoder)=>new ReadableStream({start(c,f){f=s.on({next(v){const x=v.slice(1);if(v[0]==='t')c.enqueue(e.encode(x));else{const d=atob(x),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);c.enqueue(a)}},throw(x){s=u=0;c.error(x)},return(){s=u=0;c.close()}});u=u&&f},cancel(){u&&u()}}))`;
+function makeFactoryPlugin(tag, sentinel, source) {
+	return createPlugin({
+		tag,
+		test(value) {
+			return value === sentinel;
+		},
+		parse: { stream() {
+			return {};
+		} },
+		serialize() {
+			return source;
+		},
+		deserialize: void 0
+	});
+}
+/** Server-only plugins for streaming hydration data into HTML. */
+var ssrSerovalPlugins = [
+	ShallowErrorPlugin,
+	/* @__PURE__ */ createPlugin({
+		tag: "tss/RawStream",
+		extends: [/* @__PURE__ */ makeFactoryPlugin("tss/RawStreamFactory", BINARY_FACTORY, FACTORY_BINARY), /* @__PURE__ */ makeFactoryPlugin("tss/RawStreamFactoryText", TEXT_FACTORY, FACTORY_TEXT)],
+		test(value) {
+			return value instanceof RawStream;
+		},
+		parse: { stream(value, ctx) {
+			const text = value.hint === "text";
+			const factory = ctx.parse(text ? TEXT_FACTORY : BINARY_FACTORY);
+			const [stream, stop] = pumpEncodedStream(value.stream, text ? encodeText : toBase64Fast);
+			ctx.addCleanup(stop);
+			return {
+				factory,
+				stream: ctx.parse(stream)
+			};
+		} },
+		serialize(node, ctx) {
+			return "(" + ctx.serialize(node.factory) + ")(" + ctx.serialize(node.stream) + ")";
+		},
+		deserialize: void 0
+	}),
+	ReadableStreamPlugin
+];
+function dehydrateMatch(match) {
+	const dehydratedMatch = {
+		i: dehydrateSsrMatchId(match.id),
+		u: match.updatedAt,
+		s: match.status
+	};
+	for (const [key, shorthand] of [
+		["__beforeLoadContext", "b"],
+		["loaderData", "l"],
+		["error", "e"],
+		["ssr", "ssr"]
+	]) if (match[key] !== void 0) dehydratedMatch[shorthand] = match[key];
+	if (match._notFound) dehydratedMatch.g = true;
+	return dehydratedMatch;
+}
+function disposeSerializationSafely(dispose) {
+	try {
+		dispose?.();
+	} catch (err) {
+		console.error("Error disposing SSR serialization:", err);
+	}
+}
+function notifyAndClearListeners(listeners, errorMessage, arg) {
+	const pending = listeners.slice();
+	listeners.length = 0;
+	for (const listener of pending) try {
+		listener(arg);
+	} catch (error) {
+		console.error(errorMessage, error);
+	}
+}
+var MANIFEST_CACHE_SIZE = 100;
+var manifestCaches = /* @__PURE__ */ new WeakMap();
+function getManifestCache(manifest) {
+	const cache = manifestCaches.get(manifest);
+	if (cache) return cache;
+	const newCache = createSieveCache(MANIFEST_CACHE_SIZE);
+	manifestCaches.set(manifest, newCache);
+	return newCache;
+}
+function getInlineCssForPreparedRoutes(manifest, preparedRoutes) {
+	const styles = manifest.inlineCss?.styles;
+	const hrefs = preparedRoutes.inlineCssHrefs;
+	if (!styles || !hrefs?.length) return;
+	let css = "";
+	for (const href of hrefs) css += styles[href];
+	return css;
+}
+function getInlineCssAssetForPreparedRoutes(manifest, preparedRoutes) {
+	const css = getInlineCssForPreparedRoutes(manifest, preparedRoutes);
+	return css === void 0 ? void 0 : createInlineCssStyleAsset(css);
+}
+function getMatchedRoutesCacheKey(matches) {
+	let cacheKey = "";
+	for (let i = 0; i < matches.length; i++) cacheKey += (i === 0 ? "" : "\0") + matches[i].routeId;
+	return cacheKey;
+}
+function getPreparedMatchedManifestRoutes(manifest, matches, cacheKey) {
+	{
+		const cached = getManifestCache(manifest).get(cacheKey);
+		if (cached) return cached;
+	}
+	const preparedRoutes = prepareMatchedManifestRoutes(manifest, matches);
+	getManifestCache(manifest).set(cacheKey, preparedRoutes);
+	return preparedRoutes;
+}
+function prepareMatchedManifestRoutes(manifest, matches) {
+	const inlineStyles = manifest.inlineCss?.styles;
+	const routes = {};
+	if (!inlineStyles) {
+		for (const match of matches) {
+			const route = manifest.routes[match.routeId];
+			if (route) routes[match.routeId] = route;
+		}
+		return {
+			routes,
+			hasStrippedRoutes: false
+		};
+	}
+	const inlineCssHrefs = [];
+	const seenInlineCssHrefs = /* @__PURE__ */ new Set();
+	let hasStrippedRoutes = false;
+	for (const match of matches) {
+		const routeId = match.routeId;
+		const route = manifest.routes[routeId];
+		if (!route) continue;
+		const nextRoute = stripInlinedStylesheetAssetsFromRoute(inlineStyles, route, inlineCssHrefs, seenInlineCssHrefs);
+		if (nextRoute !== route) hasStrippedRoutes = true;
+		routes[routeId] = nextRoute;
+	}
+	return {
+		routes,
+		hasStrippedRoutes,
+		...inlineCssHrefs.length ? { inlineCssHrefs } : {}
+	};
+}
+function stripInlinedStylesheetAssetsFromRoute(inlineStyles, route, inlineCssHrefs, seenInlineCssHrefs) {
+	const css = route.css;
+	if (!css) return route;
+	if (css.length === 0) {
+		const nextRoute = { ...route };
+		delete nextRoute.css;
+		return nextRoute;
+	}
+	let cssLinks;
+	for (let i = 0; i < css.length; i++) {
+		const link = css[i];
+		const href = getStylesheetHref(link);
+		if (inlineStyles[href] === void 0) {
+			if (cssLinks) cssLinks.push(link);
+			continue;
+		}
+		if (!seenInlineCssHrefs.has(href)) {
+			seenInlineCssHrefs.add(href);
+			inlineCssHrefs.push(href);
+		}
+		if (!cssLinks) cssLinks = css.slice(0, i);
+	}
+	if (!cssLinks) return route;
+	if (cssLinks.length > 0) return {
+		...route,
+		css: cssLinks
+	};
+	const nextRoute = { ...route };
+	delete nextRoute.css;
+	return nextRoute;
+}
+function hasRouteAssets(route) {
+	return !!route.scripts?.length || !!route.css?.length;
+}
+function hasRequestAssets(assets) {
+	return !!assets && (!!assets.preloads?.length || hasRouteAssets(assets));
+}
+function mergeRequestAssetsIntoRootRoute(rootRoute, requestAssets) {
+	const preloads = requestAssets?.preloads?.length ? [...requestAssets.preloads, ...rootRoute?.preloads ?? []] : rootRoute?.preloads;
+	const scripts = requestAssets?.scripts?.length ? [...requestAssets.scripts, ...rootRoute?.scripts ?? []] : rootRoute?.scripts;
+	const cssLinks = requestAssets?.css?.length ? [...requestAssets.css, ...rootRoute?.css ?? []] : rootRoute?.css;
+	return {
+		...rootRoute ?? {},
+		...preloads?.length ? { preloads } : {},
+		...scripts?.length ? { scripts } : {},
+		...cssLinks?.length ? { css: cssLinks } : {}
+	};
+}
+/**
+* Compose a client-facing manifest from prepared routes, an optional inline
+* style, and optional request-scoped assets merged into the root route.
+* Shared by the `router.ssr.manifest` getter and `dehydrate()` so the two
+* compositions cannot drift.
+*/
+function composeManifest(scriptFormat, inlineStyle, routes, requestAssets) {
+	const base = {
+		...scriptFormat ? { scriptFormat } : {},
+		...inlineStyle ? { inlineStyle } : {},
+		routes
+	};
+	if (!hasRequestAssets(requestAssets)) return base;
+	return {
+		...base,
+		routes: {
+			...routes,
+			[rootRouteId]: mergeRequestAssetsIntoRootRoute(routes[rootRouteId], requestAssets)
+		}
+	};
+}
+function attachRouterServerSsrUtils({ router, manifest, getRequestAssets }) {
+	let memoizedPreparedManifest;
+	router.ssr = { get manifest() {
+		if (!manifest) return manifest;
+		const requestAssets = getRequestAssets?.();
+		const hasAssets = hasRequestAssets(requestAssets);
+		if (!hasAssets && !manifest.inlineCss) return manifest;
+		let inlineCssAsset;
+		let routes = manifest.routes;
+		if (manifest.inlineCss) {
+			const matches = _getRenderedMatches(router.stores.matches.get());
+			const cacheKey = getMatchedRoutesCacheKey(matches);
+			if (memoizedPreparedManifest?.cacheKey === cacheKey) {
+				inlineCssAsset = memoizedPreparedManifest.inlineCssAsset;
+				routes = memoizedPreparedManifest.routes;
+			} else {
+				const preparedManifest = getPreparedMatchedManifestRoutes(manifest, matches, cacheKey);
+				inlineCssAsset = getInlineCssAssetForPreparedRoutes(manifest, preparedManifest);
+				if (preparedManifest.hasStrippedRoutes) routes = {
+					...manifest.routes,
+					...preparedManifest.routes
+				};
+				memoizedPreparedManifest = {
+					cacheKey,
+					inlineCssAsset,
+					routes
+				};
+			}
+		}
+		return composeManifest(manifest.scriptFormat, inlineCssAsset, routes, hasAssets ? requestAssets : void 0);
+	} };
+	let dehydrationPhase = "idle";
+	let renderFinished = false;
+	const renderFinishedListeners = [];
+	const cleanupListeners = [];
+	let cleanupStarted = false;
+	let settled = false;
+	let disposeSerialization;
+	const hydrationScripts = createHydrationScripts(router.options.ssr?.nonce);
+	const serverSsr = {
+		hydrationScripts,
+		dehydrate: async (opts) => {
+			if (dehydrationPhase !== "idle") invariant();
+			opts?.signal?.throwIfAborted();
+			dehydrationPhase = "started";
+			let matchesToDehydrate = _getRenderedMatches(router.stores.matches.get());
+			if (router.isShell()) matchesToDehydrate = matchesToDehydrate.slice(0, 1);
+			const matches = matchesToDehydrate.map(dehydrateMatch);
+			let manifestToDehydrate = void 0;
+			if (manifest) {
+				const cacheKey = getMatchedRoutesCacheKey(matchesToDehydrate);
+				const preparedManifest = getPreparedMatchedManifestRoutes(manifest, matchesToDehydrate, cacheKey);
+				manifestToDehydrate = composeManifest(manifest.scriptFormat, preparedManifest.inlineCssHrefs ? createInlineCssPlaceholderAsset() : void 0, preparedManifest.routes, opts?.requestAssets);
+			}
+			const dehydratedRouter = {
+				manifest: manifestToDehydrate,
+				matches
+			};
+			const dehydrate = router.options.dehydrate;
+			const dehydratedData = dehydrate ? opts?.signal ? await waitForReason(dehydrate.call(router.options), opts.signal) : await dehydrate.call(router.options) : void 0;
+			opts?.signal?.throwIfAborted();
+			if (cleanupStarted) return;
+			if (dehydratedData !== void 0) dehydratedRouter.dehydratedData = dehydratedData;
+			const trackPlugins = { didRun: false };
+			const serializationAdapters = router.options.serializationAdapters;
+			const plugins = serializationAdapters ? [...serializationAdapters.map((adapter) => /* @__PURE__ */ makeSsrSerovalPlugin(adapter, trackPlugins)), ...ssrSerovalPlugins] : ssrSerovalPlugins;
+			let serializationCompleteSignaled = false;
+			let initialSerialized = false;
+			const completeScriptSerialization = (result) => {
+				if (serializationCompleteSignaled || cleanupStarted) return;
+				serializationCompleteSignaled = true;
+				const dispose = disposeSerialization;
+				disposeSerialization = void 0;
+				if (result === true) {
+					settled = true;
+					hydrationScripts.finish();
+				} else if (result) hydrationScripts.fail(result.error);
+				if (dispose) queueMicrotask(() => disposeSerializationSafely(dispose));
+			};
+			let synchronousFailure;
+			const dispose = crossSerializeStream(dehydratedRouter, {
+				refs: /* @__PURE__ */ new Map(),
+				plugins,
+				onSerialize: (data, initial) => {
+					if (serializationCompleteSignaled || cleanupStarted) return;
+					initialSerialized ||= initial;
+					if (!hydrationScripts.pushSerializedSource(data, initial, trackPlugins.didRun)) completeScriptSerialization(false);
+				},
+				onError: (err) => {
+					if (serializationCompleteSignaled || cleanupStarted) return;
+					console.error("Serialization error:", err);
+					synchronousFailure = { error: err };
+					completeScriptSerialization({ error: err });
+				},
+				scopeId: "tsr",
+				onDone: () => {
+					if (initialSerialized) completeScriptSerialization(true);
+				}
+			});
+			if (cleanupStarted || serializationCompleteSignaled) disposeSerializationSafely(dispose);
+			else disposeSerialization = dispose;
+			if (synchronousFailure) throw synchronousFailure.error;
+		},
+		onRenderFinished: (listener) => {
+			if (cleanupStarted) return;
+			if (renderFinished) {
+				try {
+					listener();
+				} catch (error) {
+					console.error("Error in render finished listener:", error);
+				}
+				return;
+			}
+			renderFinishedListeners.push(listener);
+		},
+		onCleanup: (listener) => {
+			if (cleanupStarted) {
+				try {
+					listener(settled);
+				} catch (error) {
+					console.error("Error in SSR cleanup listener:", error);
+				}
+				return;
+			}
+			cleanupListeners.push(listener);
+		},
+		setRenderFinished: () => {
+			if (cleanupStarted || renderFinished) return;
+			renderFinished = true;
+			hydrationScripts.liftBarrier();
+			notifyAndClearListeners(renderFinishedListeners, "Error in render finished listener:", void 0);
+		},
+		disableHydration: () => {
+			if (cleanupStarted || dehydrationPhase === "disabled") return;
+			if (dehydrationPhase !== "idle") invariant();
+			hydrationScripts.disableHydration();
+			dehydrationPhase = "disabled";
+		},
+		takeInitialHydrationScriptTags: hydrationScripts.takeInitialHydrationScriptTags,
+		cleanup() {
+			if (cleanupStarted) return;
+			cleanupStarted = true;
+			hydrationScripts.cleanup();
+			const dispose = disposeSerialization;
+			disposeSerialization = void 0;
+			disposeSerializationSafely(dispose);
+			notifyAndClearListeners(cleanupListeners, "Error in SSR cleanup listener:", settled);
+			renderFinishedListeners.length = 0;
+			router.ssr = void 0;
+			router.serverSsr = void 0;
+		}
+	};
+	router.serverSsr = serverSsr;
+	for (const listener of router.serverSsrLifecycle?.onServerSsrAttach ?? []) try {
+		listener(serverSsr);
+	} catch (err) {
+		console.error("SSR attach listener error:", err);
+	}
+}
+function getNormalizedURL(url, base) {
+	if (typeof url === "string") url = url.replace("\\", "%5C");
+	const rawUrl = new URL(url, base);
+	const handledProtocolRelativeURL = rawUrl.pathname.startsWith("//");
+	const decodedPathname = decodePath(handledProtocolRelativeURL ? rawUrl.pathname.replace(/^\/+/, "/") : rawUrl.pathname);
+	const searchParams = new URLSearchParams(rawUrl.search);
+	const normalizedHref = decodedPathname + (searchParams.size > 0 ? "?" : "") + searchParams.toString() + rawUrl.hash;
+	return {
+		url: new URL(normalizedHref, rawUrl.origin),
+		handledProtocolRelativeURL
+	};
+}
+function isSsrResponse(value) {
+	if (typeof value !== "object" || value === null || !("response" in value) || !(value.response instanceof Response) || !("serverSsrCleanup" in value)) return false;
+	if (value.serverSsrCleanup === "none") return true;
+	return value.serverSsrCleanup === "stream" && "dispose" in value && typeof value.dispose === "function";
+}
+function normalizeSsrResponse(result) {
+	if (result instanceof Response) return {
+		response: result,
+		serverSsrCleanup: "none"
+	};
+	if (isSsrResponse(result)) return result;
+	throw new TypeError("Expected a Response from the SSR handler");
+}
+function cancelResponseBody(response, reason) {
+	const body = response.body;
+	if (!body) return;
+	body.cancel(reason).catch(console.error);
+}
+function disposeSsrResponse(result, reason) {
+	const response = normalizeSsrResponse(result);
+	if (response.serverSsrCleanup === "stream") response.dispose(reason);
+	else cancelResponseBody(response.response, reason);
+}
+function bindSsrResponseToRequest(router, result, signal) {
+	const ssrResponse = normalizeSsrResponse(result);
+	if (ssrResponse.serverSsrCleanup !== "stream") {
+		if (signal.aborted) disposeSsrResponse(result, signal.reason);
+		return ssrResponse;
+	}
+	const abort = () => {
+		disposeSsrResponse(ssrResponse, signal.reason);
+	};
+	if (signal.aborted) {
+		abort();
+		return ssrResponse;
+	}
+	const serverSsr = router?.serverSsr;
+	if (serverSsr?.hydrationScripts.requestSignal === signal) {
+		serverSsr.onCleanup(() => {
+			if (signal.aborted) abort();
+		});
+		return ssrResponse;
+	}
+	signal.addEventListener("abort", abort, { once: true });
+	if (!serverSsr) return ssrResponse;
+	serverSsr.onCleanup(() => {
+		signal.removeEventListener("abort", abort);
+	});
+	return ssrResponse;
+}
+function replaceSsrResponse(result, response, reason) {
+	disposeSsrResponse(result, reason);
+	return {
+		response,
+		serverSsrCleanup: "none"
+	};
+}
+function stripSsrResponseBody(result, reason) {
+	const ssrResponse = normalizeSsrResponse(result);
+	disposeSsrResponse(ssrResponse, reason);
+	return {
+		response: new Response(null, ssrResponse.response),
+		serverSsrCleanup: "none"
+	};
 }
 var serovalPlugins = void 0;
 var FORM_DATA_CONTENT_TYPES = ["multipart/form-data", "application/x-www-form-urlencoded"];
 var MAX_PAYLOAD_SIZE = 1e6;
+var MAX_PENDING_SERIALIZATION_RECORDS = 1024;
+var MAX_PENDING_SERIALIZATION_BYTES = 33554432;
+var textEncoder = new TextEncoder();
+function encodeSerializationRecord(value) {
+	return textEncoder.encode(JSON.stringify(value));
+}
+function exceedsPendingSerializationLimit(record, recordCount, pendingBytes) {
+	return recordCount >= MAX_PENDING_SERIALIZATION_RECORDS || pendingBytes + record.byteLength > MAX_PENDING_SERIALIZATION_BYTES;
+}
+function runSerializationCleanup(dispose) {
+	try {
+		dispose();
+	} catch {}
+}
+function cancelRawStream(stream, reason) {
+	stream.cancel(reason).catch(() => {});
+}
 var handleServerAction = async ({ request, context, serverFnId }) => {
 	const methodUpper = request.method.toUpperCase();
 	const url = new URL(request.url);
@@ -4475,193 +5421,273 @@ var handleServerAction = async ({ request, context, serverFnId }) => {
 		headers: { Allow: action.method }
 	});
 	const isServerFn = request.headers.get("x-tsr-serverFn") === "true";
-	if (!serovalPlugins) serovalPlugins = getDefaultSerovalPlugins();
+	serovalPlugins ??= getSerovalPlugins(defaultSerovalDeserializerPlugins);
 	const contentType = request.headers.get("Content-Type");
-	function parsePayload(payload) {
-		return fromJSON(payload, { plugins: serovalPlugins });
-	}
-	return await (async () => {
+	try {
+		let res;
+		if (FORM_DATA_CONTENT_TYPES.some((type) => contentType && contentType.includes(type))) {
+			if (methodUpper === "GET") invariant();
+			const formData = await request.formData();
+			const serializedContext = formData.get(TSS_FORMDATA_CONTEXT);
+			formData.delete(TSS_FORMDATA_CONTEXT);
+			const params = {
+				context,
+				data: formData,
+				method: methodUpper
+			};
+			if (typeof serializedContext === "string") try {
+				const deserializedContext = fromJSON(JSON.parse(serializedContext), { plugins: serovalPlugins });
+				if (typeof deserializedContext === "object" && deserializedContext) params.context = safeObjectMerge(deserializedContext, context);
+			} catch (e) {}
+			res = await action(params);
+		} else if (methodUpper === "GET") {
+			const payloadParam = url.searchParams.get("payload");
+			if (payloadParam && payloadParam.length > MAX_PAYLOAD_SIZE) throw new Error("Payload too large");
+			const payload = payloadParam ? fromJSON(JSON.parse(payloadParam), { plugins: serovalPlugins }) : void 0;
+			res = await action({
+				data: payload?.data,
+				context: safeObjectMerge(payload?.context, context),
+				method: methodUpper
+			});
+		} else {
+			const payload = contentType?.includes("application/json") ? fromJSON(await request.json(), { plugins: serovalPlugins }) : void 0;
+			res = await action({
+				data: payload?.data,
+				context: safeObjectMerge(payload?.context, context),
+				method: methodUpper
+			});
+		}
+		const unwrapped = res.error !== void 0 ? res.error : res.result;
+		if (isNotFound(res)) res = isNotFoundResponse(res);
+		if (!isServerFn && (unwrapped instanceof Response || unwrapped === null || typeof unwrapped !== "object")) return unwrapped;
+		if (unwrapped instanceof Response) {
+			if (isRedirect(unwrapped)) return unwrapped;
+			unwrapped.headers.set(X_TSS_RAW_RESPONSE, "true");
+			return unwrapped;
+		}
+		return serializeResult(res, request.signal, serovalPlugins);
+	} catch (error) {
+		if (error instanceof Response) return error;
+		if (isNotFound(error)) return isNotFoundResponse(error);
+		console.error("Server Fn Error!", error);
+		const serializedError = JSON.stringify(await toCrossJSONAsync(error, {
+			refs: /* @__PURE__ */ new Map(),
+			plugins: serovalPlugins
+		}));
+		const response = getResponse();
+		const headers = {
+			"Content-Type": "application/json",
+			[X_TSS_SERIALIZED]: "true"
+		};
 		try {
-			let res = await (async () => {
-				if (FORM_DATA_CONTENT_TYPES.some((type) => contentType && contentType.includes(type))) {
-					if (methodUpper === "GET") invariant();
-					const formData = await request.formData();
-					const serializedContext = formData.get(TSS_FORMDATA_CONTEXT);
-					formData.delete(TSS_FORMDATA_CONTEXT);
-					const params = {
-						context,
-						data: formData,
-						method: methodUpper
-					};
-					if (typeof serializedContext === "string") try {
-						const deserializedContext = fromJSON(JSON.parse(serializedContext), { plugins: serovalPlugins });
-						if (typeof deserializedContext === "object" && deserializedContext) params.context = safeObjectMerge(deserializedContext, context);
-					} catch (e) {}
-					return await action(params);
-				}
-				if (methodUpper === "GET") {
-					const payloadParam = url.searchParams.get("payload");
-					if (payloadParam && payloadParam.length > MAX_PAYLOAD_SIZE) throw new Error("Payload too large");
-					const payload = payloadParam ? parsePayload(JSON.parse(payloadParam)) : {};
-					payload.context = safeObjectMerge(payload.context, context);
-					payload.method = methodUpper;
-					return await action(payload);
-				}
-				let jsonPayload;
-				if (contentType?.includes("application/json")) jsonPayload = await request.json();
-				const payload = jsonPayload ? parsePayload(jsonPayload) : {};
-				payload.context = safeObjectMerge(payload.context, context);
-				payload.method = methodUpper;
-				return await action(payload);
-			})();
-			const unwrapped = res.result || res.error;
-			if (isNotFound(res)) res = isNotFoundResponse(res);
-			if (!isServerFn) return unwrapped;
-			if (unwrapped instanceof Response) {
-				if (isRedirect(unwrapped)) return unwrapped;
-				unwrapped.headers.set(X_TSS_RAW_RESPONSE, "true");
-				return unwrapped;
-			}
-			return serializeResult(res);
-			function serializeResult(res) {
-				let nonStreamingBody = void 0;
-				const alsResponse = getResponse();
-				if (res !== void 0) {
-					const rawStreams = /* @__PURE__ */ new Map();
-					let initialPhase = true;
-					let lateStreamWriter;
-					let lateStreamReadable = void 0;
-					const pendingLateStreams = [];
-					const plugins = [/* @__PURE__ */ createRawStreamRPCPlugin((id, stream) => {
-						if (initialPhase) {
-							rawStreams.set(id, stream);
-							return;
-						}
-						if (lateStreamWriter) {
-							lateStreamWriter.write({
-								id,
-								stream
-							}).catch(() => {});
-							return;
-						}
-						pendingLateStreams.push({
-							id,
-							stream
-						});
-					}), ...serovalPlugins || []];
-					let done = false;
-					const callbacks = {
-						onParse: (value) => {
-							nonStreamingBody = value;
-						},
-						onDone: () => {
-							done = true;
-						},
-						onError: (error) => {
-							throw error;
-						}
-					};
-					toCrossJSONStream(res, {
-						refs: /* @__PURE__ */ new Map(),
-						plugins,
-						onParse(value) {
-							callbacks.onParse(value);
-						},
-						onDone() {
-							callbacks.onDone();
-						},
-						onError: (error) => {
-							callbacks.onError(error);
-						}
-					});
-					initialPhase = false;
-					if (done && rawStreams.size === 0) return new Response(nonStreamingBody ? JSON.stringify(nonStreamingBody) : void 0, {
-						status: alsResponse.status,
-						statusText: alsResponse.statusText,
-						headers: {
-							"Content-Type": "application/json",
-							[X_TSS_SERIALIZED]: "true"
-						}
-					});
-					const { readable, writable } = new TransformStream();
-					lateStreamReadable = readable;
-					lateStreamWriter = writable.getWriter();
-					for (const registration of pendingLateStreams) lateStreamWriter.write(registration).catch(() => {});
-					pendingLateStreams.length = 0;
-					const multiplexedStream = createMultiplexedStream(new ReadableStream({
-						start(controller) {
-							callbacks.onParse = (value) => {
-								controller.enqueue(JSON.stringify(value) + "\n");
-							};
-							callbacks.onDone = () => {
-								try {
-									controller.close();
-								} catch {}
-								lateStreamWriter?.close().catch(() => {}).finally(() => {
-									lateStreamWriter = void 0;
-								});
-							};
-							callbacks.onError = (error) => {
-								controller.error(error);
-								lateStreamWriter?.abort(error).catch(() => {}).finally(() => {
-									lateStreamWriter = void 0;
-								});
-							};
-							if (nonStreamingBody !== void 0) callbacks.onParse(nonStreamingBody);
-							if (done) callbacks.onDone();
-						},
-						cancel() {
-							lateStreamWriter?.abort().catch(() => {});
-							lateStreamWriter = void 0;
-						}
-					}), rawStreams, lateStreamReadable);
-					return new Response(multiplexedStream, {
-						status: alsResponse.status,
-						statusText: alsResponse.statusText,
-						headers: {
-							"Content-Type": TSS_CONTENT_TYPE_FRAMED_VERSIONED,
-							[X_TSS_SERIALIZED]: "true"
-						}
-					});
-				}
-				return new Response(void 0, {
-					status: alsResponse.status,
-					statusText: alsResponse.statusText
-				});
-			}
-		} catch (error) {
-			if (error instanceof Response) return error;
-			if (isNotFound(error)) return isNotFoundResponse(error);
-			console.info();
-			console.info("Server Fn Error!");
-			console.info();
-			console.error(error);
-			console.info();
-			const serializedError = JSON.stringify(await Promise.resolve(toCrossJSONAsync(error, {
-				refs: /* @__PURE__ */ new Map(),
-				plugins: serovalPlugins
-			})));
-			const response = getResponse();
 			return new Response(serializedError, {
 				status: response.status ?? 500,
 				statusText: response.statusText,
+				headers
+			});
+		} catch {
+			return new Response(serializedError, {
+				status: 500,
+				statusText: "",
+				headers
+			});
+		}
+	}
+};
+/**
+* Serializes a server-function result. A result that Seroval completes
+* synchronously without RawStreams becomes plain JSON; everything else is a
+* framed response whose records and raw streams are multiplexed in order.
+*/
+function serializeResult(res, signal, plugins) {
+	const alsResponse = getResponse();
+	const initialRecords = [];
+	let initialBytes = 0;
+	const pendingRawStreams = [];
+	let done = false;
+	let initialParsed = false;
+	let serializationFailure;
+	let disposeSerialization;
+	let onParse = (value, initial) => {
+		if (serializationFailure) return;
+		initialParsed ||= initial;
+		const record = encodeSerializationRecord(value);
+		if (exceedsPendingSerializationLimit(record, initialRecords.length, initialBytes)) {
+			serializationFailure = [/* @__PURE__ */ new Error("Server function serialization exceeded its pending output limit")];
+			return;
+		}
+		initialRecords.push(record);
+		initialBytes += record.byteLength;
+	};
+	let onDone = () => {
+		if (initialParsed) done = true;
+	};
+	let onError = (error) => {
+		serializationFailure ??= [error];
+	};
+	const dispose = toCrossJSONStream(res, {
+		refs: /* @__PURE__ */ new Map(),
+		plugins: [/* @__PURE__ */ createRawStreamRPCPlugin((id, stream) => {
+			if (serializationFailure) {
+				cancelRawStream(stream, serializationFailure[0]);
+				return;
+			}
+			if (id > 1024) {
+				const error = /* @__PURE__ */ new Error(`Too many raw streams in framed response (max ${MAX_FRAMED_STREAMS})`);
+				cancelRawStream(stream, error);
+				onError(error);
+				return;
+			}
+			pendingRawStreams.push({
+				id,
+				stream
+			});
+		}), ...plugins],
+		onParse(value, initial) {
+			onParse(value, initial);
+		},
+		onDone() {
+			onDone();
+		},
+		onError: (error) => {
+			onError(error);
+		}
+	});
+	if (serializationFailure) {
+		runSerializationCleanup(dispose);
+		for (const registration of pendingRawStreams) cancelRawStream(registration.stream, serializationFailure[0]);
+		throw serializationFailure[0];
+	}
+	if (!done) disposeSerialization = dispose;
+	if (done && pendingRawStreams.length === 0 && initialRecords.length === 1) return new Response(initialRecords[0], {
+		status: alsResponse.status,
+		statusText: alsResponse.statusText,
+		headers: {
+			"Content-Type": "application/json",
+			[X_TSS_SERIALIZED]: "true"
+		}
+	});
+	if (done && initialRecords.length === 1) {
+		const json = initialRecords[0];
+		if (json.byteLength > 16777216) {
+			const error = /* @__PURE__ */ new Error("Server function serialization exceeded its pending output limit");
+			for (const registration of pendingRawStreams) cancelRawStream(registration.stream, error);
+			throw error;
+		}
+		const rawStreams = pendingRawStreams.splice(0);
+		initialRecords.length = 0;
+		return createFramedResponse(new ReadableStream({
+			start(controller) {
+				controller.enqueue({
+					json,
+					rawStreams
+				});
+				controller.close();
+			},
+			cancel(reason) {
+				for (const registration of rawStreams) cancelRawStream(registration.stream, reason);
+			}
+		}), { signal });
+	}
+	const { readable, writable } = new TransformStream();
+	const writer = writable.getWriter();
+	const recordAbortController = new AbortController();
+	let pendingBytes = 0;
+	const pendingRecords = /* @__PURE__ */ new Set();
+	const abortRecordStream = (error) => {
+		if (serializationFailure) return;
+		serializationFailure = [error];
+		const disposeCurrentSerialization = disposeSerialization;
+		disposeSerialization = void 0;
+		for (const registration of pendingRawStreams.splice(0)) cancelRawStream(registration.stream, error);
+		for (const record of pendingRecords) for (const registration of record.rawStreams) cancelRawStream(registration.stream, error);
+		pendingRecords.clear();
+		recordAbortController.abort(error);
+		writer.abort(error).catch(() => {});
+		if (disposeCurrentSerialization) runSerializationCleanup(disposeCurrentSerialization);
+	};
+	const writeRecord = (json, rawStreams) => {
+		if (serializationFailure) {
+			for (const registration of rawStreams) cancelRawStream(registration.stream, serializationFailure[0]);
+			return false;
+		}
+		if (json.byteLength > 16777216 || exceedsPendingSerializationLimit(json, pendingRecords.size, pendingBytes)) {
+			const error = /* @__PURE__ */ new Error("Server function serialization exceeded its pending output limit");
+			for (const registration of rawStreams) cancelRawStream(registration.stream, error);
+			onError(error);
+			return false;
+		}
+		pendingBytes += json.byteLength;
+		const record = {
+			json,
+			rawStreams
+		};
+		pendingRecords.add(record);
+		writer.write(record).then(() => {
+			pendingRecords.delete(record);
+			pendingBytes -= json.byteLength;
+		}, (error) => {
+			const stillOwned = pendingRecords.delete(record);
+			pendingBytes -= json.byteLength;
+			if (stillOwned) for (const registration of rawStreams) cancelRawStream(registration.stream, error);
+		});
+		return true;
+	};
+	onParse = (value) => {
+		if (serializationFailure) return;
+		writeRecord(encodeSerializationRecord(value), pendingRawStreams.splice(0));
+	};
+	onDone = () => {
+		if (serializationFailure) return;
+		disposeSerialization = void 0;
+		writer.close().catch(() => {});
+	};
+	onError = (error) => {
+		abortRecordStream(error);
+	};
+	const initialRawStreams = pendingRawStreams.splice(0);
+	for (let index = 0; index < initialRecords.length; index++) {
+		const isLast = index === initialRecords.length - 1;
+		if (!writeRecord(initialRecords[index], isLast ? initialRawStreams : [])) {
+			if (!isLast) for (const registration of initialRawStreams) cancelRawStream(registration.stream, serializationFailure[0]);
+			initialRecords.length = 0;
+			throw serializationFailure[0];
+		}
+	}
+	initialRecords.length = 0;
+	if (done) onDone();
+	writer.closed.catch((error) => {
+		abortRecordStream(error);
+	});
+	return createFramedResponse(readable, {
+		signal: AbortSignal.any([recordAbortController.signal, signal]),
+		onCancel: abortRecordStream
+	});
+	function createFramedResponse(records, options) {
+		const multiplexedStream = createMultiplexedStream(records, options);
+		try {
+			return new Response(multiplexedStream, {
+				status: alsResponse.status,
+				statusText: alsResponse.statusText,
 				headers: {
-					"Content-Type": "application/json",
+					"Content-Type": TSS_CONTENT_TYPE_FRAMED_VERSIONED,
 					[X_TSS_SERIALIZED]: "true"
 				}
 			});
+		} catch (error) {
+			cancelRawStream(multiplexedStream, error);
+			throw error;
 		}
-	})();
-};
+	}
+}
 function isNotFoundResponse(error) {
 	const { headers, ...rest } = error;
-	return new Response(JSON.stringify(rest), {
+	const response = new Response(JSON.stringify(rest), {
 		status: 404,
-		headers: {
-			"Content-Type": "application/json",
-			...headers || {}
-		}
+		headers
 	});
+	response.headers.set("Content-Type", "application/json");
+	return response;
 }
 var LINK_PARAM_TOKEN_RE = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 var PRELOAD_AS_VALUES = /* @__PURE__ */ new Set([
@@ -5025,7 +6051,8 @@ async function transformManifestAssets(source, transformFn, _opts) {
 	else if (manifest.inlineCss) manifest.inlineCss = await transformInlineCssStyles(manifest.inlineCss, transformFn);
 	for (const route of Object.values(manifest.routes)) {
 		if (route.preloads?.length) route.preloads = await Promise.all(route.preloads.map(async (link) => {
-			const result = await transformScript(resolveManifestAssetLink(link).href);
+			const resolved = resolveManifestAssetLink(link);
+			const result = await transformScript(resolved.href);
 			return assignManifestLink(link, {
 				href: result.href,
 				crossOrigin: result.crossOrigin
@@ -5206,596 +6233,18 @@ var ServerFunctionSerializationAdapter = createSerializationAdapter({
 	toSerializable: ({ serverFnMeta }) => ({ functionId: serverFnMeta.id }),
 	fromSerializable: ({ functionId }) => {
 		const fn = async (opts, signal) => {
-			return (await (await getServerFnById(functionId, { origin: "client" }))(opts ?? {}, signal)).result;
+			const serverFn = await getServerFnById(functionId, { origin: "client" });
+			const result = await serverFn({
+				data: opts?.data,
+				context: opts?.context,
+				method: serverFn.method ?? "GET"
+			}, signal);
+			if (result.error !== void 0) throw result.error;
+			return result.result;
 		};
 		return fn;
 	}
 });
-var tsrScript_default = "self.$_TSR={h(){this.hydrated=!0,this.c()},e(){this.streamEnded=!0,this.c()},c(){this.hydrated&&this.streamEnded&&(delete self.$_TSR,delete self.$R.tsr)},p(e){this.initialized?e():this.buffer.push(e)},buffer:[]}";
-var SCOPE_ID = "tsr";
-var TSR_PREFIX = GLOBAL_TSR + ".router=";
-var P_PREFIX = GLOBAL_TSR + ".p(()=>";
-var P_SUFFIX = ")";
-function dehydrateMatch(match) {
-	const dehydratedMatch = {
-		i: dehydrateSsrMatchId(match.id),
-		u: match.updatedAt,
-		s: match.status
-	};
-	for (const [key, shorthand] of [
-		["__beforeLoadContext", "b"],
-		["loaderData", "l"],
-		["error", "e"],
-		["ssr", "ssr"]
-	]) if (match[key] !== void 0) dehydratedMatch[shorthand] = match[key];
-	if (match._notFound) dehydratedMatch.g = true;
-	return dehydratedMatch;
-}
-var INITIAL_SCRIPTS = [getCrossReferenceHeader(SCOPE_ID), tsrScript_default];
-var ScriptBuffer = class {
-	constructor(injectScript) {
-		this._scriptBarrierLifted = false;
-		this._cleanedUp = false;
-		this._microtaskVersion = 0;
-		this._pendingMicrotaskVersion = 0;
-		this.injectScript = injectScript;
-		this._queue = INITIAL_SCRIPTS.slice();
-	}
-	enqueue(script) {
-		if (this._cleanedUp) return;
-		this._queue.push(script);
-		if (this._scriptBarrierLifted) this.scheduleInjectBufferedScripts();
-	}
-	liftBarrier() {
-		if (this._scriptBarrierLifted || this._cleanedUp) return;
-		this._scriptBarrierLifted = true;
-		if (this._queue.length > 0) this.scheduleInjectBufferedScripts();
-	}
-	scheduleInjectBufferedScripts() {
-		if (this._pendingMicrotaskVersion !== 0) return;
-		const pendingVersion = ++this._microtaskVersion;
-		this._pendingMicrotaskVersion = pendingVersion;
-		queueMicrotask(() => {
-			if (this._pendingMicrotaskVersion !== pendingVersion) return;
-			this._pendingMicrotaskVersion = 0;
-			this.injectBufferedScripts();
-		});
-	}
-	clearPendingMicrotask() {
-		if (this._pendingMicrotaskVersion === 0) return;
-		this._pendingMicrotaskVersion = 0;
-		this._microtaskVersion++;
-	}
-	/**
-	* Flushes any pending scripts synchronously.
-	* Call this before signaling serialization finished to ensure all scripts are injected.
-	*
-	* IMPORTANT: Only injects if the barrier has been lifted. Before the barrier is lifted,
-	* scripts should remain in the queue so takeBufferedScripts() can retrieve them
-	*/
-	flush() {
-		if (!this._scriptBarrierLifted) return;
-		if (this._cleanedUp) return;
-		this.clearPendingMicrotask();
-		this.injectBufferedScripts();
-	}
-	takeAll() {
-		return this.takeScripts(this._queue.length);
-	}
-	takeScripts(count) {
-		if (count <= 0) return void 0;
-		const bufferedScripts = this._queue.splice(0, count);
-		if (bufferedScripts.length === 0) return;
-		if (bufferedScripts.length === 1) return bufferedScripts[0] + ";document.currentScript.remove()";
-		return bufferedScripts.join(";") + ";document.currentScript.remove()";
-	}
-	hasPending() {
-		return this._queue.length > 0;
-	}
-	injectBufferedScripts() {
-		if (this._cleanedUp) return;
-		if (this._queue.length === 0) return;
-		const scriptsToInject = this.takeAll();
-		if (scriptsToInject) this.injectScript?.(scriptsToInject);
-	}
-	cleanup() {
-		this._cleanedUp = true;
-		this.clearPendingMicrotask();
-		this._queue = [];
-		this.injectScript = void 0;
-	}
-};
-var MANIFEST_CACHE_SIZE = 100;
-var manifestCaches = /* @__PURE__ */ new WeakMap();
-function getManifestCache(manifest) {
-	const cache = manifestCaches.get(manifest);
-	if (cache) return cache;
-	const newCache = createLRUCache(MANIFEST_CACHE_SIZE);
-	manifestCaches.set(manifest, newCache);
-	return newCache;
-}
-function getInlineCssForPreparedRoutes(manifest, preparedRoutes) {
-	if (preparedRoutes.inlineCss !== void 0) return preparedRoutes.inlineCss;
-	const styles = manifest.inlineCss?.styles;
-	const hrefs = preparedRoutes.inlineCssHrefs;
-	if (!styles || !hrefs?.length) return void 0;
-	let css = "";
-	for (const href of hrefs) css += styles[href];
-	preparedRoutes.inlineCss = css;
-	return css;
-}
-function getInlineCssAssetForPreparedRoutes(manifest, preparedRoutes) {
-	const css = getInlineCssForPreparedRoutes(manifest, preparedRoutes);
-	return css === void 0 ? void 0 : createInlineCssStyleAsset(css);
-}
-function getMatchedRoutesCacheKey(matches) {
-	let cacheKey = "";
-	for (let i = 0; i < matches.length; i++) cacheKey += (i === 0 ? "" : "\0") + matches[i].routeId;
-	return cacheKey;
-}
-function getPreparedMatchedManifestRoutes(manifest, matches, cacheKey) {
-	{
-		const cached = getManifestCache(manifest).get(cacheKey);
-		if (cached) return cached;
-	}
-	const preparedRoutes = prepareMatchedManifestRoutes(manifest, matches);
-	getManifestCache(manifest).set(cacheKey, preparedRoutes);
-	return preparedRoutes;
-}
-function prepareMatchedManifestRoutes(manifest, matches) {
-	const inlineStyles = manifest.inlineCss?.styles;
-	const routes = {};
-	if (!inlineStyles) {
-		for (const match of matches) {
-			const route = manifest.routes[match.routeId];
-			if (route) routes[match.routeId] = route;
-		}
-		return {
-			routes,
-			hasStrippedRoutes: false
-		};
-	}
-	const inlineCssHrefs = [];
-	const seenInlineCssHrefs = /* @__PURE__ */ new Set();
-	let hasStrippedRoutes = false;
-	for (const match of matches) {
-		const routeId = match.routeId;
-		const route = manifest.routes[routeId];
-		if (!route) continue;
-		const nextRoute = stripInlinedStylesheetAssetsFromRoute(inlineStyles, route, inlineCssHrefs, seenInlineCssHrefs);
-		if (nextRoute !== route) hasStrippedRoutes = true;
-		routes[routeId] = nextRoute;
-	}
-	return {
-		routes,
-		hasStrippedRoutes,
-		...inlineCssHrefs.length ? { inlineCssHrefs } : {}
-	};
-}
-function stripInlinedStylesheetAssetsFromRoute(inlineStyles, route, inlineCssHrefs, seenInlineCssHrefs) {
-	const css = route.css;
-	if (!css) return route;
-	if (css.length === 0) {
-		const nextRoute = { ...route };
-		delete nextRoute.css;
-		return nextRoute;
-	}
-	let cssLinks;
-	for (let i = 0; i < css.length; i++) {
-		const link = css[i];
-		const href = getStylesheetHref(link);
-		if (inlineStyles[href] === void 0) {
-			if (cssLinks) cssLinks.push(link);
-			continue;
-		}
-		if (!seenInlineCssHrefs.has(href)) {
-			seenInlineCssHrefs.add(href);
-			inlineCssHrefs.push(href);
-		}
-		if (!cssLinks) cssLinks = css.slice(0, i);
-	}
-	if (!cssLinks) return route;
-	if (cssLinks.length > 0) return {
-		...route,
-		css: cssLinks
-	};
-	const nextRoute = { ...route };
-	delete nextRoute.css;
-	return nextRoute;
-}
-function hasRouteAssets(route) {
-	return !!route.scripts?.length || !!route.css?.length;
-}
-function hasRequestAssets(assets) {
-	return !!assets && (!!assets.preloads?.length || hasRouteAssets(assets));
-}
-function mergeRequestAssetsIntoRootRoute(rootRoute, requestAssets) {
-	const preloads = requestAssets?.preloads?.length ? [...requestAssets.preloads, ...rootRoute?.preloads ?? []] : rootRoute?.preloads;
-	const scripts = requestAssets?.scripts?.length ? [...requestAssets.scripts, ...rootRoute?.scripts ?? []] : rootRoute?.scripts;
-	const cssLinks = requestAssets?.css?.length ? [...requestAssets.css, ...rootRoute?.css ?? []] : rootRoute?.css;
-	return {
-		...rootRoute ?? {},
-		...preloads?.length ? { preloads } : {},
-		...scripts?.length ? { scripts } : {},
-		...cssLinks?.length ? { css: cssLinks } : {}
-	};
-}
-function attachRouterServerSsrUtils({ router, manifest, getRequestAssets }) {
-	router.ssr = { get manifest() {
-		if (!manifest) return manifest;
-		const requestAssets = getRequestAssets?.();
-		const matches = _getRenderedMatches(router.stores.matches.get());
-		const hasAssets = hasRequestAssets(requestAssets);
-		if (!hasAssets && !manifest.inlineCss) return manifest;
-		let inlineCssAsset;
-		let routes = manifest.routes;
-		if (manifest.inlineCss) {
-			const preparedManifest = getPreparedMatchedManifestRoutes(manifest, matches, getMatchedRoutesCacheKey(matches));
-			inlineCssAsset = getInlineCssAssetForPreparedRoutes(manifest, preparedManifest);
-			if (preparedManifest.hasStrippedRoutes) routes = {
-				...manifest.routes,
-				...preparedManifest.routes
-			};
-		}
-		if (!hasAssets) return {
-			...manifest.scriptFormat ? { scriptFormat: manifest.scriptFormat } : {},
-			...inlineCssAsset ? { inlineStyle: inlineCssAsset } : {},
-			routes
-		};
-		const rootRoute = routes[rootRouteId];
-		return {
-			...manifest.scriptFormat ? { scriptFormat: manifest.scriptFormat } : {},
-			...inlineCssAsset ? { inlineStyle: inlineCssAsset } : {},
-			routes: {
-				...routes,
-				[rootRouteId]: mergeRequestAssetsIntoRootRoute(rootRoute, requestAssets)
-			}
-		};
-	} };
-	let _dehydrated = false;
-	let _serializationFinished = false;
-	let streamFastPathReserved = false;
-	const renderFinishedListeners = [];
-	const injectedHtmlListeners = [];
-	const serializationFinishedListeners = [];
-	const cleanupListeners = [];
-	let cleanupStarted = false;
-	let injectedHtmlBuffer = "";
-	const callListeners = (listeners, errorPrefix) => {
-		const snapshot = listeners.slice();
-		for (const l of snapshot) try {
-			l();
-		} catch (err) {
-			console.error(`${errorPrefix}:`, err);
-		}
-	};
-	const removeListener = (listeners, listener) => {
-		const index = listeners.indexOf(listener);
-		if (index >= 0) listeners.splice(index, 1);
-	};
-	const scriptBuffer = new ScriptBuffer((script) => {
-		serverSsr.injectScript(script);
-	});
-	const serverSsr = {
-		injectHtml: (html) => {
-			if (!html || cleanupStarted) return;
-			injectedHtmlBuffer += html;
-			callListeners(injectedHtmlListeners, "SSR injected HTML listener error");
-		},
-		injectScript: (script) => {
-			if (!script || cleanupStarted) return;
-			const html = `<script${router.options.ssr?.nonce ? ` nonce='${router.options.ssr.nonce}'` : ""}>${script}<\/script>`;
-			serverSsr.injectHtml(html);
-		},
-		dehydrate: async (opts) => {
-			if (_dehydrated) invariant();
-			let matchesToDehydrate = _getRenderedMatches(router.stores.matches.get());
-			if (router.isShell()) matchesToDehydrate = matchesToDehydrate.slice(0, 1);
-			const matches = matchesToDehydrate.map(dehydrateMatch);
-			let manifestToDehydrate = void 0;
-			if (manifest) {
-				const cacheKey = getMatchedRoutesCacheKey(matchesToDehydrate);
-				const preparedManifest = getPreparedMatchedManifestRoutes(manifest, matchesToDehydrate, cacheKey);
-				manifestToDehydrate = {
-					...manifest.scriptFormat ? { scriptFormat: manifest.scriptFormat } : {},
-					...preparedManifest.inlineCssHrefs ? { inlineStyle: createInlineCssPlaceholderAsset() } : {},
-					routes: preparedManifest.routes
-				};
-				const requestAssets = opts?.requestAssets;
-				if (hasRequestAssets(requestAssets)) {
-					const existingRoot = manifestToDehydrate.routes[rootRouteId];
-					manifestToDehydrate.routes = {
-						...manifestToDehydrate.routes,
-						[rootRouteId]: mergeRequestAssetsIntoRootRoute(existingRoot, requestAssets)
-					};
-				}
-			}
-			const dehydratedRouter = {
-				manifest: manifestToDehydrate,
-				matches
-			};
-			const dehydratedData = await router.options.dehydrate?.();
-			if (cleanupStarted) return;
-			if (dehydratedData) dehydratedRouter.dehydratedData = dehydratedData;
-			_dehydrated = true;
-			const trackPlugins = { didRun: false };
-			const serializationAdapters = router.options.serializationAdapters;
-			const plugins = serializationAdapters ? serializationAdapters.map((t) => /* @__PURE__ */ makeSsrSerovalPlugin(t, trackPlugins)).concat(defaultSerovalPlugins) : defaultSerovalPlugins;
-			let serializationCompleteSignaled = false;
-			const signalSerializationComplete = () => {
-				if (serializationCompleteSignaled || cleanupStarted) return;
-				serializationCompleteSignaled = true;
-				_serializationFinished = true;
-				const listeners = serializationFinishedListeners.slice();
-				serializationFinishedListeners.length = 0;
-				for (const l of listeners) try {
-					l();
-				} catch (err) {
-					console.error("Serialization listener error:", err);
-				}
-			};
-			const finishScriptSerialization = () => {
-				if (serializationCompleteSignaled || cleanupStarted) return;
-				scriptBuffer.enqueue(GLOBAL_TSR + ".e()");
-				scriptBuffer.flush();
-				signalSerializationComplete();
-			};
-			crossSerializeStream(dehydratedRouter, {
-				refs: /* @__PURE__ */ new Map(),
-				plugins,
-				onSerialize: (data, initial) => {
-					let serialized = initial ? TSR_PREFIX + data : data;
-					if (trackPlugins.didRun) serialized = P_PREFIX + serialized + P_SUFFIX;
-					scriptBuffer.enqueue(serialized);
-				},
-				onError: (err) => {
-					console.error("Serialization error:", err);
-					if (err && err.stack) console.error(err.stack);
-					finishScriptSerialization();
-				},
-				scopeId: SCOPE_ID,
-				onDone: () => {
-					finishScriptSerialization();
-				}
-			});
-		},
-		isDehydrated() {
-			return _dehydrated;
-		},
-		isSerializationFinished() {
-			return _serializationFinished;
-		},
-		reserveStreamFastPath() {
-			if (!cleanupStarted && _serializationFinished && !streamFastPathReserved && renderFinishedListeners.length === 0 && !injectedHtmlBuffer && !scriptBuffer.hasPending()) {
-				streamFastPathReserved = true;
-				return true;
-			}
-			return false;
-		},
-		onInjectedHtml: (listener) => {
-			if (cleanupStarted) return () => {};
-			injectedHtmlListeners.push(listener);
-			return () => removeListener(injectedHtmlListeners, listener);
-		},
-		onRenderFinished: (listener) => {
-			if (cleanupStarted || streamFastPathReserved) return;
-			renderFinishedListeners.push(listener);
-		},
-		onSerializationFinished: (listener) => {
-			if (cleanupStarted) return () => {};
-			if (_serializationFinished && !cleanupStarted) {
-				try {
-					listener();
-				} catch (err) {
-					console.error("Serialization listener error:", err);
-				}
-				return () => {};
-			}
-			serializationFinishedListeners.push(listener);
-			return () => removeListener(serializationFinishedListeners, listener);
-		},
-		onCleanup: (listener) => {
-			if (cleanupStarted) return;
-			cleanupListeners.push(listener);
-		},
-		setRenderFinished: () => {
-			if (cleanupStarted) return;
-			scriptBuffer.liftBarrier();
-			const listeners = renderFinishedListeners.slice();
-			renderFinishedListeners.length = 0;
-			for (const l of listeners) try {
-				l();
-			} catch (err) {
-				console.error("Error in render finished listener:", err);
-			}
-			if (_serializationFinished) scriptBuffer.flush();
-		},
-		takeBufferedScripts() {
-			const scripts = scriptBuffer.takeAll();
-			if (!scripts) return void 0;
-			return {
-				tag: "script",
-				attrs: {
-					nonce: router.options.ssr?.nonce,
-					className: "$tsr",
-					id: TSR_SCRIPT_BARRIER_ID
-				},
-				children: scripts
-			};
-		},
-		liftScriptBarrier() {
-			scriptBuffer.liftBarrier();
-		},
-		takeBufferedHtml() {
-			if (!injectedHtmlBuffer) return;
-			const buffered = injectedHtmlBuffer;
-			injectedHtmlBuffer = "";
-			return buffered;
-		},
-		cleanup() {
-			if (cleanupStarted) return;
-			cleanupStarted = true;
-			const listeners = cleanupListeners.slice();
-			cleanupListeners.length = 0;
-			for (const l of listeners) try {
-				l();
-			} catch (err) {
-				console.error("Error in SSR cleanup listener:", err);
-			}
-			renderFinishedListeners.length = 0;
-			injectedHtmlListeners.length = 0;
-			serializationFinishedListeners.length = 0;
-			injectedHtmlBuffer = "";
-			scriptBuffer.cleanup();
-			router.serverSsr = void 0;
-		}
-	};
-	router.serverSsr = serverSsr;
-	for (const listener of router.serverSsrLifecycle?.onServerSsrAttach ?? []) try {
-		listener(serverSsr);
-	} catch (err) {
-		console.error("SSR attach listener error:", err);
-	}
-}
-/**
-* Get the origin for the request.
-*
-* SECURITY: We intentionally do NOT trust the Origin header for determining
-* the router's origin. The Origin header can be spoofed by attackers, which
-* could lead to SSRF-like vulnerabilities where redirects are constructed
-* using a malicious origin (CVE-2024-34351).
-*
-* Instead, we derive the origin from request.url, which is typically set by
-* the server infrastructure (not client-controlled headers).
-*
-* For applications behind proxies that need to trust forwarded headers,
-* use the router's `origin` option to explicitly configure a trusted origin.
-*/
-function getOrigin(request) {
-	try {
-		return new URL(request.url).origin;
-	} catch {}
-	return "http://localhost";
-}
-function getNormalizedURL(url, base) {
-	if (typeof url === "string") url = url.replace("\\", "%5C");
-	const rawUrl = new URL(url, base);
-	const { path: decodedPathname, handledProtocolRelativeURL } = decodePath(rawUrl.pathname);
-	const searchParams = new URLSearchParams(rawUrl.search);
-	const normalizedHref = decodedPathname + (searchParams.size > 0 ? "?" : "") + searchParams.toString() + rawUrl.hash;
-	return {
-		url: new URL(normalizedHref, rawUrl.origin),
-		handledProtocolRelativeURL
-	};
-}
-function isSsrResponse(value) {
-	return typeof value === "object" && value !== null && "response" in value && "serverSsrCleanup" in value;
-}
-function normalizeSsrResponse(result) {
-	return isSsrResponse(result) ? result : {
-		response: result,
-		serverSsrCleanup: "none"
-	};
-}
-function disposeSsrResponse(response, reason) {
-	if (response.serverSsrCleanup !== "stream") return Promise.resolve();
-	try {
-		return Promise.resolve(response.dispose(reason));
-	} catch (error) {
-		return Promise.reject(error);
-	}
-}
-function disposeSsrResponseDetached(result, reason, onError = console.error) {
-	const ssrResponse = normalizeSsrResponse(result);
-	if (ssrResponse.serverSsrCleanup === "stream") {
-		disposeSsrResponse(ssrResponse, reason).catch(onError);
-		return;
-	}
-	if (ssrResponse.response.body) try {
-		ssrResponse.response.body.cancel(reason).catch(onError);
-	} catch (error) {
-		onError(error);
-	}
-}
-function bindSsrResponseToRequest(router, result, signal) {
-	const ssrResponse = normalizeSsrResponse(result);
-	if (ssrResponse.serverSsrCleanup !== "stream") {
-		if (signal.aborted) disposeSsrResponseDetached(result, signal.reason);
-		return ssrResponse;
-	}
-	const failed = (error) => {
-		router?.serverSsr?.cleanup();
-		console.error(error);
-	};
-	const abort = () => {
-		disposeSsrResponseDetached(ssrResponse, signal.reason, failed);
-	};
-	if (signal.aborted) {
-		abort();
-		return ssrResponse;
-	}
-	signal.addEventListener("abort", abort, { once: true });
-	router?.serverSsr?.onCleanup(() => {
-		signal.removeEventListener("abort", abort);
-	});
-	return ssrResponse;
-}
-async function replaceSsrResponse(result, response, reason) {
-	await disposeSsrResponse(normalizeSsrResponse(result), reason);
-	return {
-		response,
-		serverSsrCleanup: "none"
-	};
-}
-async function stripSsrResponseBody(result, reason) {
-	const ssrResponse = normalizeSsrResponse(result);
-	await disposeSsrResponse(ssrResponse, reason);
-	return {
-		response: new Response(null, ssrResponse.response),
-		serverSsrCleanup: "none"
-	};
-}
-var requestWaiters = /* @__PURE__ */ new WeakMap();
-function removeRequestWaiter(waiters, index, reject) {
-	if (waiters[index] !== reject) return;
-	if (index !== waiters.length - 1) {
-		waiters[index] = void 0;
-		return;
-	}
-	waiters.pop();
-	while (waiters.length && waiters[waiters.length - 1] === void 0) waiters.pop();
-}
-function waitForRequest(value, signal, onLate) {
-	const promise = Promise.resolve(value);
-	if (signal.aborted) {
-		promise.then(onLate, () => {});
-		return Promise.reject(signal.reason);
-	}
-	return new Promise((resolve, reject) => {
-		let waiters = requestWaiters.get(signal);
-		let index;
-		if (waiters) index = waiters.push(reject) - 1;
-		else {
-			const newWaiters = [reject];
-			waiters = newWaiters;
-			index = 0;
-			requestWaiters.set(signal, newWaiters);
-			signal.addEventListener("abort", () => {
-				requestWaiters.delete(signal);
-				for (const rejectWaiter of newWaiters) rejectWaiter?.(signal.reason);
-				newWaiters.length = 0;
-			}, { once: true });
-		}
-		promise.then((result) => {
-			removeRequestWaiter(waiters, index, reject);
-			if (signal.aborted) onLate?.(result);
-			else resolve(result);
-		}, (error) => {
-			removeRequestWaiter(waiters, index, reject);
-			reject(error);
-		});
-	});
-}
 function getStartResponseHeaders(opts) {
 	return mergeHeaders({ "Content-Type": "text/html; charset=utf-8" }, ..._getRenderedMatches(opts.router.stores.matches.get()).map((match) => {
 		return match.headers;
@@ -5810,8 +6259,8 @@ var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
 		import("./router--AjUuKdE.mjs").then((n) => n.t),
-		import("./start-D78hV5CR.mjs"),
-		import("./empty-plugin-adapters-D8EPSxUh.mjs")
+		import("./start-CNhmlbac.mjs"),
+		import("./empty-plugin-adapters-CrOIDQkd.mjs")
 	]);
 	return {
 		routerEntry,
@@ -5836,74 +6285,79 @@ function throwRouteHandlerError() {
 function throwIfMayNotDefer() {
 	throw new Error(ERR_NO_DEFER);
 }
-/**
-* Check if a value is a special response (Response or Redirect)
-*/
-function isSpecialResponse(value) {
-	return value instanceof Response || isRedirect(value);
+function getResponseFromResult(result) {
+	return isSsrResponse(result) || result instanceof Response ? result : result?.response;
+}
+var responseBodySources = /* @__PURE__ */ new WeakMap();
+function disposeResponseResult(result, reason) {
+	const response = getResponseFromResult(result);
+	if (isSsrResponse(response) || response instanceof Response) disposeSsrResponse(response, reason);
+}
+function hasResponseBody(value) {
+	return value instanceof Response && value.body !== null;
+}
+function inheritsResponseOwnership(ownership, candidate) {
+	return hasResponseBody(candidate) && (candidate.body === ownership.response.body || responseBodySources.get(candidate) === ownership.response);
+}
+function disposeResponseOwnership(ownership, reason) {
+	const { response, sourceBody, streamResponse } = ownership;
+	streamResponse?.dispose(reason);
+	if (!streamResponse || response.body !== sourceBody) response.body.cancel(reason).catch(() => {});
+}
+function getOwnedResponse(ownership) {
+	const { response, sourceBody, streamResponse } = ownership;
+	if (!streamResponse) return response;
+	if (streamResponse.response === response && response.body === sourceBody) return streamResponse;
+	if (response.body === sourceBody) return {
+		...streamResponse,
+		response
+	};
+	return {
+		...streamResponse,
+		response,
+		dispose(reason) {
+			disposeResponseOwnership(ownership, reason);
+		}
+	};
+}
+function createLateResponseDisposer(signal) {
+	return (result) => disposeResponseResult(result, signal.reason);
 }
 /**
-* Normalize middleware result to context shape
+* Compose middleware around a terminal response handler. With no middleware
+* the terminal runs directly.
 */
-function handleCtxResult(result) {
-	if (isSsrResponse(result) || isSpecialResponse(result)) return { response: result };
-	return result;
-}
-function disposeLateResponse(result, signal) {
-	const response = handleCtxResult(result)?.response;
-	if (isSsrResponse(response) || isSpecialResponse(response)) disposeSsrResponseDetached(response, signal.reason);
-}
-function isSignalAborted(signal) {
-	return signal.aborted;
-}
-/**
-* Execute a middleware chain
-*/
-async function executeMiddleware(middlewares, ctx, signal) {
+async function executeMiddleware(middlewares, terminal, ctx, signal, terminalNext) {
 	let index = -1;
-	let streamResponse;
-	let retiredStreamIdentities;
-	const isResponseAlias = (candidate, response) => candidate === response || candidate instanceof Response && response.body !== null && candidate.body === response.body;
+	let responseOwnership;
+	let settled = false;
+	const disposeAbandonedResult = createLateResponseDisposer(signal);
 	const setResponse = (response) => {
-		if (isSsrResponse(response)) {
-			if (response.serverSsrCleanup === "stream") streamResponse = response;
-			ctx.response = response.response;
+		const ssrResponse = isSsrResponse(response) ? response : void 0;
+		const streamResponse = ssrResponse?.serverSsrCleanup === "stream" ? ssrResponse : void 0;
+		const exposed = ssrResponse ? ssrResponse.response : response;
+		const current = responseOwnership;
+		if (settled) {
+			if (exposed !== ctx.response) disposeResponseResult(response, "late middleware response");
 			return;
 		}
-		ctx.response = response;
-	};
-	const disposeStreamResponse = async (reason) => {
-		const response = streamResponse;
-		if (!response) return;
-		streamResponse = void 0;
-		retiredStreamIdentities ??= /* @__PURE__ */ new WeakSet();
-		retiredStreamIdentities.add(response.response);
-		if (response.response.body) retiredStreamIdentities.add(response.response.body);
-		const currentResponse = ctx.response;
-		if (isResponseAlias(currentResponse, response.response)) ctx.response = void 0;
-		await response.dispose(reason);
-	};
-	const disposeAbandonedResult = (result) => {
-		const exposed = handleCtxResult(result)?.response;
-		const response = isSsrResponse(exposed) ? exposed.response : exposed;
-		if (streamResponse && isResponseAlias(response, streamResponse.response)) {
-			disposeStreamResponse(signal.reason).catch(console.error);
-			return;
+		if (current && current.response === exposed) current.streamResponse ??= streamResponse;
+		else if (current && inheritsResponseOwnership(current, exposed)) {
+			current.response = exposed;
+			current.streamResponse ??= streamResponse;
+		} else {
+			if (current) disposeResponseOwnership(current, "middleware response replaced");
+			if (hasResponseBody(exposed)) responseOwnership = {
+				response: exposed,
+				sourceBody: exposed.body,
+				streamResponse
+			};
+			else responseOwnership = void 0;
 		}
-		if (response instanceof Response && retiredStreamIdentities && (retiredStreamIdentities.has(response) || response.body !== null && retiredStreamIdentities.has(response.body))) return;
-		disposeLateResponse(result, signal);
+		ctx.response = exposed;
 	};
-	const getFinalResponse = async () => {
-		const response = ctx.response;
-		if (!response) throwRouteHandlerError();
-		if (!streamResponse) return response;
-		if (response === streamResponse.response) return streamResponse;
-		if (streamResponse.response.body !== null && response.body === streamResponse.response.body) return {
-			...streamResponse,
-			response
-		};
-		await disposeStreamResponse("middleware response replaced");
-		return response;
+	const reconcileCtxResponse = () => {
+		if (ctx.response !== responseOwnership?.response) setResponse(ctx.response);
 	};
 	let nextPromise;
 	function next(nextCtx) {
@@ -5912,75 +6366,67 @@ async function executeMiddleware(middlewares, ctx, signal) {
 		return result;
 	}
 	async function runNext(nextCtx) {
-		if (signal.aborted) throw signal.reason;
+		signal.throwIfAborted();
 		if (nextCtx) {
 			if (nextCtx.context) ctx.context = safeObjectMerge(ctx.context, nextCtx.context);
 			for (const key of Object.keys(nextCtx)) if (key === "response") setResponse(nextCtx.response);
 			else if (key !== "context") ctx[key] = nextCtx[key];
 		}
 		index++;
-		const middleware = middlewares[index];
+		const isTerminal = index === middlewares.length;
+		const middleware = index < middlewares.length ? middlewares[index] : isTerminal ? terminal : void 0;
+		const middlewareNext = isTerminal && terminalNext ? terminalNext : next;
 		if (!middleware) return ctx;
 		let result;
 		try {
 			const pending = middleware({
 				...ctx,
-				next
+				next: middlewareNext
 			});
-			if (pending === nextPromise) {
+			if (nextPromise && pending === nextPromise) {
 				nextPromise = void 0;
-				result = await pending;
-				if (isSignalAborted(signal)) {
-					disposeAbandonedResult(result);
-					throw signal.reason;
-				}
-			} else result = await waitForRequest(pending, signal, disposeAbandonedResult);
+				await pending;
+				if (signal.aborted) throw signal.reason;
+				return ctx;
+			} else if (!isPromise(pending)) {
+				result = pending;
+				signal.throwIfAborted();
+			} else result = await waitForReason(pending, signal, disposeAbandonedResult, disposeAbandonedResult);
 		} catch (err) {
-			if (isSignalAborted(signal)) throw signal.reason;
-			if (isSpecialResponse(err)) {
+			reconcileCtxResponse();
+			if (signal.aborted) {
+				if (result !== void 0) disposeAbandonedResult(result);
+				if (err !== signal.reason) disposeAbandonedResult(err);
+				throw signal.reason;
+			}
+			if (err instanceof Response) {
 				setResponse(err);
 				return ctx;
 			}
 			throw err;
 		}
-		const normalized = handleCtxResult(result);
-		if (normalized) {
-			if (normalized.response !== void 0) setResponse(normalized.response);
-			if (normalized.context) ctx.context = safeObjectMerge(ctx.context, normalized.context);
+		if (isTerminal && terminalNext && !result) throwRouteHandlerError();
+		reconcileCtxResponse();
+		if (result && result !== ctx) {
+			const response = getResponseFromResult(result);
+			if (response !== void 0 && response !== ctx.response) setResponse(response);
+			if (response !== result && result.context && result.context !== ctx.context) ctx.context = safeObjectMerge(ctx.context, result.context);
 		}
 		return ctx;
 	}
 	try {
 		await runNext();
-		const response = await waitForRequest(getFinalResponse(), signal, disposeAbandonedResult);
-		if (signal.aborted) {
-			disposeAbandonedResult(response);
-			throw signal.reason;
-		}
-		return {
-			ctx,
-			response
-		};
+		const response = ctx.response;
+		if (!response) throwRouteHandlerError();
+		reconcileCtxResponse();
+		if (signal.aborted) throw signal.reason;
+		settled = true;
+		return responseOwnership ? getOwnedResponse(responseOwnership) : response;
 	} catch (err) {
-		const disposal = disposeStreamResponse(signal.aborted ? signal.reason : err);
-		if (signal.aborted) disposal.catch(console.error);
-		else await disposal;
+		settled = true;
+		if (responseOwnership) disposeResponseOwnership(responseOwnership, signal.aborted ? signal.reason : err);
 		throw err;
 	}
-}
-/**
-* Wrap a route handler as middleware
-*/
-function handlerToMiddleware(handler, mayDefer = false) {
-	if (mayDefer) return handler;
-	return async (ctx) => {
-		const response = await handler({
-			...ctx,
-			next: throwIfMayNotDefer
-		});
-		if (!response) throwRouteHandlerError();
-		return response;
-	};
 }
 /**
 * Creates the TanStack Start request handler.
@@ -6022,17 +6468,25 @@ function createStartHandler(cbOrOptions) {
 	const resolveManifestForRequest = finalManifestResolver.resolveCached;
 	finalManifestResolver.warmup({ getBaseManifest: () => getBaseManifest(void 0) });
 	const startRequestResolver = async (request, requestOpts) => {
-		let router = null;
+		const signal = request.signal;
+		let router;
+		let routerPromise;
 		let responseOwnsCleanup = false;
 		try {
-			request.signal.throwIfAborted();
+			signal.throwIfAborted();
 			const { url, handledProtocolRelativeURL } = getNormalizedURL(request.url);
 			const href = url.pathname + url.search + url.hash;
-			const origin = getOrigin(request);
+			const origin = url.origin;
 			if (handledProtocolRelativeURL) return Response.redirect(url, 308);
-			const entries = await waitForRequest(getEntries(), request.signal);
-			const hasStartInstance = !!entries.startEntry.startInstance;
-			const startOptions = await waitForRequest(entries.startEntry.startInstance?.getOptions(), request.signal) || {};
+			const entries = await waitForReason(getEntries(), signal);
+			const isServerFnRequest = !!SERVER_FN_BASE && url.pathname.startsWith(SERVER_FN_BASE);
+			const startInstance = entries.startEntry.startInstance;
+			let startOptions;
+			if (startInstance) {
+				const pendingStartOptions = startInstance.getOptions();
+				startOptions = isPromise(pendingStartOptions) ? await waitForReason(pendingStartOptions, signal) : pendingStartOptions;
+				signal.throwIfAborted();
+			} else startOptions = {};
 			const { hasPluginAdapters, pluginSerializationAdapters } = entries.pluginAdapters;
 			const serializationAdapters = [
 				...startOptions.serializationAdapters || [],
@@ -6041,165 +6495,179 @@ function createStartHandler(cbOrOptions) {
 			];
 			const requestStartOptions = {
 				...startOptions,
-				requestMiddleware: hasStartInstance ? startOptions.requestMiddleware : [defaultCsrfMiddleware],
+				requestMiddleware: startInstance ? startOptions.requestMiddleware : isServerFnRequest ? [defaultCsrfMiddleware] : void 0,
 				serializationAdapters
 			};
 			const flattenedRequestMiddlewares = requestStartOptions.requestMiddleware ? flattenMiddlewares(requestStartOptions.requestMiddleware) : [];
 			const executedRequestMiddlewares = new Set(flattenedRequestMiddlewares);
-			const getRouter = async () => {
-				if (router) return router;
-				router = await waitForRequest(entries.routerEntry.getRouter(), request.signal);
-				let isShell = IS_SHELL_ENV;
-				if (IS_PRERENDERING && !isShell) isShell = request.headers.get(HEADERS.TSS_SHELL) === "true";
-				const history = createMemoryHistory({ initialEntries: [href] });
-				router.update({
-					history,
-					isShell,
-					isPrerendering: IS_PRERENDERING,
-					origin: router.options.origin ?? origin,
-					defaultSsr: requestStartOptions.defaultSsr,
-					serializationAdapters: [...requestStartOptions.serializationAdapters, ...router.options.serializationAdapters || []],
-					basepath: ROUTER_BASEPATH
-				});
-				return router;
+			const getRouter = () => {
+				routerPromise ??= (async () => {
+					signal.throwIfAborted();
+					const requestRouter = await waitForReason(entries.routerEntry.getRouter(), signal);
+					let isShell = IS_SHELL_ENV;
+					if (IS_PRERENDERING && !isShell) isShell = request.headers.get(HEADERS.TSS_SHELL) === "true";
+					const history = createServerHistory(href);
+					requestRouter.update({
+						history,
+						isShell,
+						isPrerendering: IS_PRERENDERING,
+						origin: requestRouter.options.origin ?? origin,
+						defaultSsr: requestStartOptions.defaultSsr,
+						serializationAdapters: [...requestStartOptions.serializationAdapters, ...requestRouter.options.serializationAdapters || []],
+						basepath: ROUTER_BASEPATH
+					});
+					router = requestRouter;
+					return requestRouter;
+				})();
+				return routerPromise;
 			};
-			if (SERVER_FN_BASE && url.pathname.startsWith(SERVER_FN_BASE)) {
+			const handlerType = isServerFnRequest ? "serverFn" : "router";
+			const startContext = {
+				getRouter,
+				startOptions: requestStartOptions,
+				request,
+				executedRequestMiddlewares,
+				handlerType
+			};
+			let terminal;
+			if (isServerFnRequest) {
 				const serverFnId = url.pathname.slice(SERVER_FN_BASE.length).split("/")[0];
 				if (!serverFnId) throw new Error("Invalid server action param for serverFnId");
-				const serverFnHandler = async ({ context }) => {
-					return runWithStartContext({
-						getRouter,
-						startOptions: requestStartOptions,
-						contextAfterGlobalMiddlewares: context,
+				terminal = ({ context }) => runWithStartContext({
+					...startContext,
+					contextAfterGlobalMiddlewares: context
+				}, () => handleServerAction({
+					request,
+					context: requestOpts?.context,
+					serverFnId
+				}));
+			} else {
+				const executeRouter = async (serverContext, matchedRoutes) => {
+					if (!/(^|,)\s*(\*\/\*|text\/html)/.test(request.headers.get("Accept") || "*/*")) return normalizeSsrResponse(Response.json({ error: "Only HTML requests are supported here" }, { status: 406 }));
+					const manifest = await waitForReason(resolveManifestForRequest({
 						request,
-						executedRequestMiddlewares,
-						handlerType: "serverFn"
-					}, () => handleServerAction({
+						requestInlineCss: requestOpts?.inlineCss,
+						getBaseManifest: () => getBaseManifest(matchedRoutes)
+					}), signal);
+					const earlyHints = createEarlyHintsForRequest({
+						onEarlyHints: requestOpts?.onEarlyHints,
+						responseLinkHeader: requestOpts?.responseLinkHeader
+					});
+					earlyHints?.collectStatic({
+						manifest,
+						matchedRoutes
+					});
+					const routerInstance = await getRouter();
+					attachRouterServerSsrUtils({
+						router: routerInstance,
+						manifest,
+						getRequestAssets: () => getStartContext({ throwIfNotFound: false })?.requestAssets
+					});
+					routerInstance.options.additionalContext = { serverContext };
+					await routerInstance.load({ _signal: signal });
+					signal.throwIfAborted();
+					if (routerInstance._serverResult?.type === "redirect") return normalizeSsrResponse(routerInstance._serverResult.redirect);
+					earlyHints?.collectDynamic(_getRenderedMatches(routerInstance.stores.matches.get()));
+					const ctx = getStartContext({ throwIfNotFound: false });
+					await routerInstance.serverSsr.dehydrate({
+						requestAssets: ctx?.requestAssets,
+						signal
+					});
+					signal.throwIfAborted();
+					const responseHeaders = getStartResponseHeaders({ router: routerInstance });
+					earlyHints?.appendResponseHeaders(responseHeaders);
+					signal.throwIfAborted();
+					const disposeLate = createLateResponseDisposer(signal);
+					return normalizeSsrResponse(await waitForReason(cb({
 						request,
-						context: requestOpts?.context,
-						serverFnId
-					}));
+						router: routerInstance,
+						responseHeaders
+					}), signal, disposeLate, disposeLate));
 				};
-				const { response: middlewareResponse } = await executeMiddleware([...flattenedRequestMiddlewares.map((d) => d.options.server), serverFnHandler], {
-					request,
-					pathname: url.pathname,
-					handlerType: "serverFn",
-					context: createNullProtoObject(requestOpts?.context)
-				}, request.signal);
-				const result = await handleRedirectResponse(middlewareResponse, request, getRouter, request.signal);
-				bindSsrResponseToRequest(router ?? void 0, result, request.signal);
-				request.signal.throwIfAborted();
-				responseOwnsCleanup = result.serverSsrCleanup === "stream";
-				return result.response;
-			}
-			const executeRouter = async (serverContext, matchedRoutes) => {
-				const acceptParts = (request.headers.get("Accept") || "*/*").split(",");
-				if (!["*/*", "text/html"].some((mimeType) => acceptParts.some((part) => part.trim().startsWith(mimeType)))) return normalizeSsrResponse(Response.json({ error: "Only HTML requests are supported here" }, { status: 500 }));
-				const manifest = await waitForRequest(resolveManifestForRequest({
-					request,
-					requestInlineCss: requestOpts?.inlineCss,
-					getBaseManifest: () => getBaseManifest(matchedRoutes)
-				}), request.signal);
-				const earlyHints = createEarlyHintsForRequest({
-					onEarlyHints: requestOpts?.onEarlyHints,
-					responseLinkHeader: requestOpts?.responseLinkHeader
-				});
-				earlyHints?.collectStatic({
-					manifest,
-					matchedRoutes
-				});
-				const routerInstance = await getRouter();
-				attachRouterServerSsrUtils({
-					router: routerInstance,
-					manifest,
-					getRequestAssets: () => getStartContext({ throwIfNotFound: false })?.requestAssets
-				});
-				routerInstance.options.additionalContext = { serverContext };
-				await routerInstance.load({ _signal: request.signal });
-				request.signal.throwIfAborted();
-				if (routerInstance._serverResult?.type === "redirect") return normalizeSsrResponse(routerInstance._serverResult.redirect);
-				earlyHints?.collectDynamic(_getRenderedMatches(routerInstance.stores.matches.get()));
-				const ctx = getStartContext({ throwIfNotFound: false });
-				await waitForRequest(routerInstance.serverSsr.dehydrate({ requestAssets: ctx?.requestAssets }), request.signal);
-				request.signal.throwIfAborted();
-				const responseHeaders = getStartResponseHeaders({ router: routerInstance });
-				earlyHints?.appendResponseHeaders(responseHeaders);
-				request.signal.throwIfAborted();
-				return normalizeSsrResponse(await waitForRequest(cb({
-					request,
-					router: routerInstance,
-					responseHeaders
-				}), request.signal, (late) => disposeLateResponse(late, request.signal)));
-			};
-			const requestHandlerMiddleware = async ({ context }) => {
-				return runWithStartContext({
+				terminal = ({ context }) => runWithStartContext({
+					...startContext,
+					contextAfterGlobalMiddlewares: context
+				}, () => handleServerRoutes({
 					getRouter,
-					startOptions: requestStartOptions,
-					contextAfterGlobalMiddlewares: context,
 					request,
-					executedRequestMiddlewares,
-					handlerType: "router"
-				}, async () => {
-					try {
-						return await handleServerRoutes({
-							getRouter,
-							request,
-							url,
-							executeRouter,
-							context,
-							executedRequestMiddlewares
-						});
-					} catch (err) {
-						if (err instanceof Response) return err;
-						throw err;
-					}
-				});
-			};
-			const { response: middlewareResponse } = await executeMiddleware([...flattenedRequestMiddlewares.map((d) => d.options.server), requestHandlerMiddleware], {
+					url,
+					executeRouter,
+					context,
+					executedRequestMiddlewares
+				}));
+			}
+			const middlewareResponse = await executeMiddleware(flattenedRequestMiddlewares.map((d) => d.options.server), terminal, {
 				request,
 				pathname: url.pathname,
-				handlerType: "router",
+				handlerType,
 				context: createNullProtoObject(requestOpts?.context)
-			}, request.signal);
-			const response = await handleRedirectResponse(middlewareResponse, request, getRouter, request.signal);
-			bindSsrResponseToRequest(router ?? void 0, response, request.signal);
-			request.signal.throwIfAborted();
-			responseOwnsCleanup = response.serverSsrCleanup === "stream";
-			return response.response;
+			}, signal);
+			let result;
+			try {
+				result = await handleRedirectResponse(middlewareResponse, getRouter, signal, isServerFnRequest && request.headers.get("x-tsr-serverFn") === "true");
+				if (request.method === "HEAD") result = stripSsrResponseBody(result, "HEAD body stripped");
+			} catch (error) {
+				disposeResponseResult(middlewareResponse, signal.aborted ? signal.reason : error);
+				throw error;
+			}
+			bindSsrResponseToRequest(router, result, signal);
+			signal.throwIfAborted();
+			responseOwnsCleanup = result.serverSsrCleanup === "stream";
+			return result.response;
 		} finally {
 			if (router?.serverSsr && !responseOwnsCleanup) router.serverSsr.cleanup();
-			router = null;
 		}
 	};
 	return requestHandler(startRequestResolver);
 }
-async function handleRedirectResponse(response, request, getRouter, signal) {
+var relativeRedirectProtocols = /* @__PURE__ */ new Set();
+async function handleRedirectResponse(response, getRouter, signal, serializeRedirect) {
 	signal.throwIfAborted();
 	const ssrResponse = normalizeSsrResponse(response);
-	if (!isRedirect(ssrResponse.response)) return ssrResponse;
-	if (isResolvedRedirect(ssrResponse.response)) {
-		if (request.headers.get("x-tsr-serverFn") === "true") return waitForRequest(replaceSsrResponse(ssrResponse, Response.json({
-			...ssrResponse.response.options,
-			isSerializedRedirect: true
-		}, { headers: ssrResponse.response.headers }), "redirect response replaced"), signal);
-		return ssrResponse;
-	}
-	const opts = ssrResponse.response.options;
-	if (opts.to && typeof opts.to === "string" && !opts.to.startsWith("/")) throw new Error(`Server side redirects must use absolute paths via the 'href' or 'to' options. The redirect() method's "to" property accepts an internal path only. Use the "href" property to provide an external URL. Received: ${JSON.stringify(opts)}`);
-	if ([
+	const redirect = ssrResponse.response;
+	if (!isRedirect(redirect)) return ssrResponse;
+	const opts = redirect.options;
+	const href = redirect.headers.get("Location") || opts.href;
+	if (!href && opts.to && typeof opts.to === "string" && !opts.to.startsWith("/")) throw new Error(`Server side redirects must use absolute paths via the 'href' or 'to' options. The redirect() method's "to" property accepts an internal path only. Use the "href" property to provide an external URL. Received: ${JSON.stringify(opts)}`);
+	if (!href && [
 		"params",
 		"search",
 		"hash"
 	].some((d) => typeof opts[d] === "function")) throw new Error(`Server side redirects must use static search, params, and hash values and do not support functional values. Received functional values for: ${Object.keys(opts).filter((d) => typeof opts[d] === "function").map((d) => `"${d}"`).join(", ")}`);
 	signal.throwIfAborted();
-	const router = await waitForRequest(getRouter(), signal);
-	signal.throwIfAborted();
-	const redirect = router.resolveRedirect(ssrResponse.response);
-	if (request.headers.get("x-tsr-serverFn") === "true") return waitForRequest(replaceSsrResponse(ssrResponse, Response.json({
-		...ssrResponse.response.options,
-		isSerializedRedirect: true
-	}, { headers: ssrResponse.response.headers }), "redirect response replaced"), signal);
-	return waitForRequest(replaceSsrResponse(ssrResponse, redirect, "redirect response replaced"), signal);
+	if (href && !isDangerousProtocol(href, relativeRedirectProtocols)) {
+		opts.href = href;
+		redirect.headers.set("Location", href);
+	} else {
+		const router = await getRouter();
+		signal.throwIfAborted();
+		router.resolveRedirect(redirect);
+	}
+	if (serializeRedirect) {
+		const redirectOptions = { ...opts };
+		delete redirectOptions.headers;
+		const responseHeaders = new Headers(redirect.headers);
+		responseHeaders.set("content-type", "application/json");
+		return replaceSsrResponse(ssrResponse, Response.json({
+			...redirectOptions,
+			isSerializedRedirect: true
+		}, { headers: responseHeaders }), "redirect response replaced");
+	}
+	return ssrResponse;
+}
+function withParsedParams(handler, matchedRoutes) {
+	if (!matchedRoutes.some((route) => route.options.params?.parse ?? route.options.parseParams)) return handler;
+	return (ctx) => {
+		const params = Object.assign(Object.create(null), ctx.params);
+		for (const route of matchedRoutes) {
+			const parse = route.options.params?.parse ?? route.options.parseParams;
+			if (parse) Object.assign(params, parse(params));
+		}
+		return handler({
+			...ctx,
+			params
+		});
+	};
 }
 async function handleServerRoutes({ getRouter, request, url, executeRouter, context, executedRequestMiddlewares }) {
 	const router = await getRouter();
@@ -6207,6 +6675,8 @@ async function handleServerRoutes({ getRouter, request, url, executeRouter, cont
 	const [matchedRoutes, rawParams, foundRoute] = router.getMatchedRoutes(pathname);
 	const isExactMatch = foundRoute && rawParams["**"] === void 0;
 	const routeMiddlewares = [];
+	let terminalHandler = (ctx) => executeRouter(ctx.context, matchedRoutes);
+	let terminalNext;
 	for (const route of matchedRoutes) {
 		const serverMiddleware = route.options.server?.middleware;
 		if (serverMiddleware) {
@@ -6215,37 +6685,35 @@ async function handleServerRoutes({ getRouter, request, url, executeRouter, cont
 		}
 	}
 	const server = foundRoute?.options.server;
-	let isHeadFallback = false;
 	if (server?.handlers && isExactMatch) {
 		const handlers = typeof server.handlers === "function" ? server.handlers({ createHandlers: (d) => d }) : server.handlers;
 		const requestMethod = request.method.toUpperCase();
 		const handler = requestMethod === "HEAD" ? handlers["HEAD"] ?? handlers["GET"] ?? handlers["ANY"] : handlers[requestMethod] ?? handlers["ANY"];
-		isHeadFallback = requestMethod === "HEAD" && handler !== void 0 && !handlers["HEAD"];
 		if (handler) {
 			const mayDefer = !!foundRoute.options.component;
-			if (typeof handler === "function") routeMiddlewares.push(handlerToMiddleware(handler, mayDefer));
-			else {
+			if (typeof handler !== "function") {
 				if (handler.middleware?.length) {
 					const handlerMiddlewares = flattenMiddlewares(handler.middleware);
 					for (const m of handlerMiddlewares) routeMiddlewares.push(m.options.server);
 				}
-				if (handler.handler) routeMiddlewares.push(handlerToMiddleware(handler.handler, mayDefer));
+			}
+			const routeHandler = typeof handler === "function" ? handler : handler.handler;
+			if (routeHandler) {
+				const parsedHandler = withParsedParams(routeHandler, matchedRoutes);
+				if (!mayDefer) {
+					terminalHandler = parsedHandler;
+					terminalNext = throwIfMayNotDefer;
+				} else routeMiddlewares.push(parsedHandler);
 			}
 		}
 	}
-	routeMiddlewares.push(((ctx) => executeRouter(ctx.context, matchedRoutes)));
-	const { ctx, response } = await executeMiddleware(routeMiddlewares, {
+	return normalizeSsrResponse(await executeMiddleware(routeMiddlewares, terminalHandler, {
 		request,
 		context,
 		params: rawParams,
 		pathname,
 		handlerType: "router"
-	}, request.signal);
-	if (isHeadFallback) {
-		if (!ctx.response) throwRouteHandlerError();
-		return waitForRequest(stripSsrResponseBody(await handleRedirectResponse(response, request, getRouter, request.signal), "HEAD body stripped"), request.signal);
-	}
-	return normalizeSsrResponse(response);
+	}, request.signal, terminalNext));
 }
 var server_exports = /* @__PURE__ */ __exportAll({
 	createServerEntry: () => createServerEntry,
