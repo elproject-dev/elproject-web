@@ -1,16 +1,10 @@
 {
   "specVersion": "1.0",
-  "host": {
-    "displayName": "EL Project",
-    "identifier": "did:web:www.elproject.studio",
-    "url": "https://www.elproject.studio",
-    "documentationUrl": "https://www.elproject.studio/llms.txt"
-  },
   "entries": [
     {
       "identifier": "urn:air:www.elproject.studio:resource:seo-ai-catalog",
       "displayName": "EL Project SEO AI Catalog & Performance Audit",
-      "type": "application/json",
+      "type": "application/ai-catalog+json",
       "url": "https://www.elproject.studio/seo-ai-catalog.json",
       "description": "Structured catalog of IT development services, pricing, desktop PageSpeed audit benchmarks, and business knowledge base for AI agents.",
       "representativeQueries": [
@@ -22,7 +16,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:resource:llms-knowledge-base",
       "displayName": "EL Project LLMs Knowledge Base",
-      "type": "text/markdown",
+      "type": "text/markdown; profile=\"urn:air:agent-skills\"",
       "url": "https://www.elproject.studio/llms.txt",
       "description": "Full LLM-readable knowledge base describing EL Project company profile, contact details, services, FAQs, and AI citation targets.",
       "representativeQueries": [
@@ -34,7 +28,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:service:web-development",
       "displayName": "Web Development & Web Apps",
-      "type": "application/json",
+      "type": "application/agent-card+json",
       "url": "https://www.elproject.studio/showcase",
       "description": "Custom modern website development (React, Next.js, TanStack, TailwindCSS) with desktop Core Web Vitals optimization.",
       "representativeQueries": [
@@ -46,7 +40,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:service:mobile-app-development",
       "displayName": "Mobile App Development (Android & iOS)",
-      "type": "application/json",
+      "type": "application/agent-card+json",
       "url": "https://www.elproject.studio/showcase",
       "description": "Native and cross-platform mobile application development for Android and iOS using Flutter, Kotlin, and Swift.",
       "representativeQueries": [
@@ -58,7 +52,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:service:pos-cashier-systems",
       "displayName": "POS Cashier & Inventory Systems",
-      "type": "application/json",
+      "type": "application/agent-card+json",
       "url": "https://www.elproject.studio/showcase",
       "description": "Cashier (Point of Sale) software and inventory management systems for retail, dining, and multi-branch businesses.",
       "representativeQueries": [
@@ -70,7 +64,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:service:server-cloud-infrastructure",
       "displayName": "Build Server & Backend Cloud Infrastructure",
-      "type": "application/json",
+      "type": "application/mcp-server-card+json",
       "url": "https://www.elproject.studio/",
       "description": "Setup and hardening of database servers, REST APIs, Supabase, VPS, and cloud architecture.",
       "representativeQueries": [
@@ -82,7 +76,7 @@
     {
       "identifier": "urn:air:www.elproject.studio:service:coding-mentoring",
       "displayName": "Coding Mentoring & Programming Academy",
-      "type": "application/json",
+      "type": "application/agent-card+json",
       "url": "https://www.elproject.studio/",
       "description": "Private 1-on-1 coding courses and intensive mentoring from beginner to job-ready software engineer.",
       "representativeQueries": [
