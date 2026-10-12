@@ -113,7 +113,7 @@ const concepts = [
 const testimonials = [
   { name: "Sbagiamu Coffee", role: "Pengusaha", text: <strong>Mantaplah pokoknya. Bikin aplikasi kasir eksekusi rapi, garapanya cepat, cocok nih sesuai konsep bisa mengelola banyak cabang...</strong> },
   {
-    name: "Sinter Pamong", role: "Pengelola Sekolah", text: <strong>Desainnya bagus, harganya jg termasuk murah sih! Overall saya puas lihat hasilnya, <br></br> Next saya ajukan ke kepala sekolah lagi</strong>
+    name: "Sinter Pamong", role: "Pengelola Sekolah", text: <strong>Desainnya bagus, harganya jg termasuk murah sih! Overall saya puas lihat hasilnya, <br /> Next saya ajukan ke kepala sekolah lagi</strong>
   },
   { name: "KPKN Grobogan", role: "Staff PK3", text: <strong>Lagi iseng cari2 orang yang bisa buat sistem antrean<br />ee malah ketemu mas ini.. ternyata diluar ekpetasi.<br />Joss gandos top markotop garapanmu mas...</strong> },
   { name: "JMB Company", role: "Pengusaha", text: <strong>Orangnya teliti,Sabar,Dan bisa di andalkan <br />Bintang 5 lah buat developer ini<br />Terima kasih</strong> },
